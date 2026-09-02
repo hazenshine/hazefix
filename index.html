@@ -1,9 +1,14 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Leave a review — hazefix</title>
+<title>Yorum bırak — HazeFix</title>
+<!-- favicon.svg kayıp (repoda ve diskte yok). Logo bulununca şu satır geri eklenecek:
+     <link rel="icon" type="image/svg+xml" href="favicon.svg"> -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #0d1811;
@@ -15,8 +20,9 @@
     --copper-dim: #8a5c37;
     --signal: #7fd8a0;
     --danger: #e2685a;
-    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    --font-body: "Fredoka", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
     --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    --font-heading: "Fredoka", var(--font-body);
   }
 
   * { box-sizing: border-box; }
@@ -45,8 +51,9 @@
   }
 
   header h1 {
+    font-family: var(--font-heading);
     font-size: 26px;
-    font-weight: 650;
+    font-weight: 500;
     letter-spacing: -0.01em;
     margin: 0 0 8px;
   }
@@ -63,7 +70,7 @@
 
   label {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: 8px;
     font-size: 14px;
     font-weight: 600;
@@ -71,17 +78,26 @@
   }
 
   .refdes {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    color: var(--copper);
-    border: 1px solid var(--copper-dim);
-    border-radius: 3px;
-    padding: 1px 5px;
-    line-height: 1.5;
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--copper);
+    flex-shrink: 0;
   }
 
-  .req { font-weight: 400; font-size: 12px; color: var(--danger); }
+  .field-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .req { font-weight: 400; font-size: 12px; color: var(--danger); transition: opacity 150ms ease, transform 150ms ease; }
   .opt { font-weight: 400; font-size: 12px; color: var(--text-muted); }
+  .req-hidden { opacity: 0; transform: scale(0.85); pointer-events: none; }
+
+  #ratingReadout { transition: opacity 150ms ease, transform 150ms ease; }
+  #ratingReadout.pulse { opacity: 0.3; transform: scale(0.94); }
 
   input[type="text"], textarea {
     width: 100%;
@@ -127,6 +143,84 @@
     background: #0f1f16;
   }
 
+  .select-wrap {
+    position: relative;
+  }
+
+  .select-trigger {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 13px;
+    font-size: 15px;
+    font-family: inherit;
+    color: var(--text-main);
+    background: #0f1f16;
+    border: 1px solid var(--panel-border);
+    border-radius: 6px;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .select-trigger:focus-visible,
+  .select-trigger.open {
+    border-color: var(--copper);
+  }
+
+  #serviceValue.placeholder {
+    color: var(--text-muted);
+  }
+
+  .select-arrow {
+    color: var(--text-muted);
+    transition: transform 150ms ease;
+  }
+
+  .select-trigger.open .select-arrow {
+    transform: rotate(180deg);
+  }
+
+  .select-options {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 6px);
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 6px;
+    list-style: none;
+    margin: 0;
+    padding: 6px;
+    z-index: 10;
+    opacity: 0;
+    transform: scale(0.96);
+    transform-origin: top center;
+    pointer-events: none;
+    transition: opacity 150ms ease, transform 150ms ease;
+  }
+
+  .select-options.open {
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
+  }
+
+  .select-options li {
+    padding: 9px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text-main);
+  }
+
+  .select-options li:hover,
+  .select-options li.active {
+    background: rgba(198, 130, 79, 0.15);
+    color: var(--signal);
+  }
+
   .dropzone input[type="file"] {
     font-size: 13px;
     color: var(--text-muted);
@@ -153,12 +247,19 @@
   .stars input { position: absolute; opacity: 0; pointer-events: none; }
 
   .stars label {
+    display: inline-block;
     font-size: 26px;
     line-height: 1;
     color: #2c4636;
     cursor: pointer;
     margin: 0;
-    transition: color 0.12s;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: color 0.12s, transform 0.1s ease;
+  }
+
+  .stars label:active {
+    transform: scale(0.8);
   }
 
   .stars input:checked ~ label,
@@ -184,10 +285,11 @@
     border: none;
     border-radius: 6px;
     cursor: pointer;
-    transition: background 0.15s, opacity 0.15s;
+    transition: background 0.15s, opacity 0.15s, transform 0.1s ease;
   }
 
   .submit-btn:hover { background: #d4915c; }
+  .submit-btn:active { transform: scale(0.96); }
   .submit-btn:disabled { opacity: 0.55; cursor: not-allowed; }
 
   .status {
@@ -203,67 +305,158 @@
   .confirm {
     text-align: center;
     padding: 12px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 220px;
   }
 
-  .confirm .signal {
-    font-family: var(--font-mono);
-    font-size: 12px;
-    color: var(--signal);
-    letter-spacing: 0.02em;
+  @keyframes confirm-grow {
+    from { opacity: 0; transform: scale(0.85); }
+    to { opacity: 1; transform: scale(1); }
   }
 
-  .confirm h2 { margin: 10px 0 8px; font-size: 20px; }
-  .confirm p { color: var(--text-muted); font-size: 14px; line-height: 1.5; margin: 0; }
+  .confirm-in {
+    animation: confirm-grow 220ms ease;
+  }
+
+  .confirm h2 { font-family: var(--font-heading); font-weight: 500; margin: 10px 0 10px; font-size: 28px; }
+  .confirm p { color: var(--text-muted); font-size: 18px; line-height: 1.6; margin: 0; }
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(4, 10, 6, 0.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 160ms ease;
+  }
+
+  .modal-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .modal-box {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 10px;
+    padding: 26px 28px;
+    max-width: 340px;
+    width: 100%;
+    text-align: center;
+    transform: scale(0.94);
+    transition: transform 160ms ease;
+  }
+
+  .modal-overlay.open .modal-box {
+    transform: scale(1);
+  }
+
+  .modal-box p {
+    margin: 0 0 18px;
+    font-size: 15px;
+    color: var(--text-main);
+    line-height: 1.5;
+  }
+
+  .modal-ok-btn {
+    background: var(--copper);
+    color: #14100b;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 30px;
+    font-size: 14px;
+    font-weight: 650;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s ease;
+  }
+
+  .modal-ok-btn:hover { background: #d4915c; }
+  .modal-ok-btn:active { transform: scale(0.96); }
 </style>
 </head>
 <body>
 
 <main class="panel" id="panel">
   <header>
-    <h1>Leave a review</h1>
-    <p class="lede">Tell me what you thought of the project or repair. Every review is checked before it goes live — it won't appear instantly.</p>
+    <h1>Yorum Bırak</h1>
+    <p class="lede">Proje ya da tamir ile ilgili düşündüklerinizi anlatınız. Her yorum yayınlanmadan önce kontrol aşamasından geçecek.</p>
   </header>
 
-  <form id="reviewForm" novalidate>
+  <form id="reviewForm" novalidate autocomplete="off">
     <div class="field">
-      <label for="firstName"><span class="refdes">R1</span> Name <span class="req">required</span></label>
+      <label for="firstName"><span class="field-name"><span class="refdes"></span>İsim</span> <span class="req" id="nameReq">(gerekli)</span></label>
       <input type="text" id="firstName" name="firstName" required maxlength="80" autocomplete="given-name">
     </div>
 
     <div class="hp" aria-hidden="true">
-      <label for="website">Leave this field blank</label>
+      <label for="website">Bu alanı boş bırakın</label>
       <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
     </div>
 
     <div class="field">
-      <label for="imageUpload"><span class="refdes">R2</span> Photo <span class="opt">optional</span></label>
+      <label id="serviceLabel"><span class="field-name"><span class="refdes"></span>Verilen Hizmet</span> <span class="req" id="serviceReq">(gerekli)</span></label>
+      <div class="select-wrap" id="serviceSelect">
+        <button type="button" class="select-trigger" id="serviceTrigger" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="serviceLabel">
+          <span id="serviceValue" class="placeholder">Seçiniz</span>
+          <span class="select-arrow">▾</span>
+        </button>
+        <ul class="select-options" id="serviceOptions" role="listbox">
+          <li role="option" id="service-opt-0" data-value="Nintendo Switch - Çipleme">Nintendo Switch - Çipleme</li>
+          <li role="option" id="service-opt-1" data-value="Nintendo Switch - Parça Değişimi">Nintendo Switch - Parça Değişimi</li>
+          <li role="option" id="service-opt-2" data-value="Nintendo Switch - Yazılım Desteği">Nintendo Switch - Yazılım Desteği</li>
+          <li role="option" id="service-opt-3" data-value="Diğer">Diğer</li>
+        </ul>
+      </div>
+      <input type="hidden" id="serviceInput" name="service">
+    </div>
+
+    <div class="field">
+      <label for="imageUpload"><span class="field-name"><span class="refdes"></span>Fotoğraf</span> <span class="opt">(opsiyonel)</span></label>
       <div class="dropzone">
         <input type="file" id="imageUpload" name="image" accept="image/png,image/jpeg,image/gif,image/webp">
       </div>
-      <p class="helper">JPG, PNG, GIF or WebP — up to 5 MB.</p>
+      <p class="helper">JPG, PNG, GIF ya da WebP — 5 MB'a kadar dosya yüklemesi yapabilirsiniz.</p>
     </div>
 
     <div class="field">
-      <label><span class="refdes">R3</span> Rating <span class="req">required</span></label>
+      <label><span class="field-name"><span class="refdes"></span>Puan</span> <span class="req" id="ratingReq">(gerekli)</span></label>
       <div class="stars" role="radiogroup" aria-label="Rating">
-        <input type="radio" id="star5" name="rating" value="5" required><label for="star5" title="Excellent">★</label>
-        <input type="radio" id="star4" name="rating" value="4"><label for="star4" title="Good">★</label>
-        <input type="radio" id="star3" name="rating" value="3"><label for="star3" title="Neutral">★</label>
-        <input type="radio" id="star2" name="rating" value="2"><label for="star2" title="Poor">★</label>
-        <input type="radio" id="star1" name="rating" value="1"><label for="star1" title="Terrible">★</label>
+        <input type="radio" id="star5" name="rating" value="5" required><label for="star5" title="Mükemmel">★</label>
+        <input type="radio" id="star4" name="rating" value="4"><label for="star4" title="İyi">★</label>
+        <input type="radio" id="star3" name="rating" value="3"><label for="star3" title="Orta">★</label>
+        <input type="radio" id="star2" name="rating" value="2"><label for="star2" title="Kötü">★</label>
+        <input type="radio" id="star1" name="rating" value="1"><label for="star1" title="Berbat">★</label>
       </div>
-      <p class="helper" id="ratingReadout">No rating selected yet.</p>
+      <p class="helper" id="ratingReadout">Henüz puan seçilmedi.</p>
     </div>
 
     <div class="field">
-      <label for="reviewText"><span class="refdes">R4</span> Review <span class="req">required</span></label>
+      <label for="reviewText"><span class="field-name"><span class="refdes"></span>Yorum</span> <span class="req" id="reviewReq">(gerekli)</span></label>
       <textarea id="reviewText" name="review" required maxlength="2000"></textarea>
     </div>
 
-    <button type="submit" class="submit-btn" id="submitBtn">Send review</button>
+    <button type="submit" class="submit-btn" id="submitBtn">Yorumu gönder</button>
     <p class="status" id="formStatus" role="status"></p>
   </form>
 </main>
+
+<div class="modal-overlay" id="validationModal">
+  <div class="modal-box" role="alertdialog" aria-modal="true" aria-labelledby="modalMsg">
+    <p id="modalMsg"><strong>İsim</strong>, <strong>Verilen Hizmet</strong>, <strong>Puan</strong> ve <strong>Yorum</strong> alanlarını doldurunuz.</p>
+    <button type="button" id="modalOkBtn" class="modal-ok-btn">Tamam</button>
+  </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -276,25 +469,216 @@
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   const MAX_BYTES = 5 * 1024 * 1024;
   const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
-  const RATING_LABELS = { 1: "Terrible", 2: "Poor", 3: "Neutral", 4: "Good", 5: "Excellent" };
+  const RATING_LABELS = { 1: "Berbat", 2: "Kötü", 3: "Orta", 4: "İyi", 5: "Mükemmel" };
 
   const form = document.getElementById("reviewForm");
+  form.reset();
+
   const panel = document.getElementById("panel");
   const statusEl = document.getElementById("formStatus");
   const submitBtn = document.getElementById("submitBtn");
   const ratingReadout = document.getElementById("ratingReadout");
   const fileInput = document.getElementById("imageUpload");
+  const nameReq = document.getElementById("nameReq");
+  const ratingReq = document.getElementById("ratingReq");
+  const reviewReq = document.getElementById("reviewReq");
+  const serviceReq = document.getElementById("serviceReq");
+  const serviceTrigger = document.getElementById("serviceTrigger");
+  const serviceOptions = document.getElementById("serviceOptions");
+  const serviceValue = document.getElementById("serviceValue");
+  const serviceInput = document.getElementById("serviceInput");
+  const serviceOptionEls = Array.from(serviceOptions.querySelectorAll("li"));
+
+  function toggleReq(badge, show) {
+    badge.classList.toggle("req-hidden", !show);
+  }
+
+  let serviceActiveIndex = -1;
+
+  function highlightServiceOption(index) {
+    serviceActiveIndex = index;
+    serviceOptionEls.forEach((li, i) => {
+      li.classList.toggle("active", i === index);
+    });
+    if (index >= 0) {
+      serviceTrigger.setAttribute("aria-activedescendant", serviceOptionEls[index].id);
+    } else {
+      serviceTrigger.removeAttribute("aria-activedescendant");
+    }
+  }
+
+  function openServiceSelect() {
+    serviceOptions.classList.add("open");
+    serviceTrigger.classList.add("open");
+    serviceTrigger.setAttribute("aria-expanded", "true");
+    const currentIndex = serviceOptionEls.findIndex((li) => li.dataset.value === serviceInput.value);
+    highlightServiceOption(currentIndex >= 0 ? currentIndex : 0);
+  }
+
+  function closeServiceSelect() {
+    serviceOptions.classList.remove("open");
+    serviceTrigger.classList.remove("open");
+    serviceTrigger.setAttribute("aria-expanded", "false");
+    highlightServiceOption(-1);
+  }
+
+  function selectServiceOption(index) {
+    const li = serviceOptionEls[index];
+    if (!li) return;
+    serviceValue.textContent = li.dataset.value;
+    serviceValue.classList.remove("placeholder");
+    serviceInput.value = li.dataset.value;
+    toggleReq(serviceReq, false);
+    closeServiceSelect();
+  }
+
+  serviceTrigger.addEventListener("click", () => {
+    if (serviceOptions.classList.contains("open")) {
+      closeServiceSelect();
+    } else {
+      openServiceSelect();
+    }
+  });
+
+  serviceTrigger.addEventListener("keydown", (e) => {
+    const isOpen = serviceOptions.classList.contains("open");
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (!isOpen) {
+        openServiceSelect();
+      } else {
+        highlightServiceOption(Math.min(serviceActiveIndex + 1, serviceOptionEls.length - 1));
+      }
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (!isOpen) {
+        openServiceSelect();
+      } else {
+        highlightServiceOption(Math.max(serviceActiveIndex - 1, 0));
+      }
+    } else if ((e.key === "Enter" || e.key === " ") && isOpen) {
+      e.preventDefault();
+      selectServiceOption(serviceActiveIndex);
+    }
+  });
+
+  // Mousedown on an option would blur the trigger, and the focusout handler
+  // below closes the list (pointer-events: none) before the click can land.
+  // Suppressing the default keeps focus on the trigger so the click fires.
+  serviceOptions.addEventListener("mousedown", (e) => e.preventDefault());
+
+  serviceOptionEls.forEach((li, index) => {
+    li.addEventListener("click", () => selectServiceOption(index));
+    li.addEventListener("mouseenter", () => highlightServiceOption(index));
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!document.getElementById("serviceSelect").contains(e.target)) {
+      closeServiceSelect();
+    }
+  });
+
+  document.getElementById("serviceSelect").addEventListener("focusout", (e) => {
+    if (!document.getElementById("serviceSelect").contains(e.relatedTarget)) {
+      closeServiceSelect();
+    }
+  });
+
+  form.firstName.addEventListener("input", () => {
+    toggleReq(nameReq, form.firstName.value.trim().length < 3);
+  });
+
+  form.reviewText.addEventListener("input", () => {
+    toggleReq(reviewReq, form.reviewText.value.trim().length < 15);
+  });
+
+  function pulseReadout(text) {
+    ratingReadout.style.transition = "none";
+    ratingReadout.classList.add("pulse");
+    ratingReadout.textContent = text;
+    void ratingReadout.offsetWidth;
+    ratingReadout.style.transition = "";
+    ratingReadout.classList.remove("pulse");
+  }
+
+  let ratingHasBeenSelected = false;
 
   form.querySelectorAll('input[name="rating"]').forEach((input) => {
     input.addEventListener("change", () => {
-      ratingReadout.textContent = `${input.value}/5 — ${RATING_LABELS[input.value]}`;
+      if (ratingHasBeenSelected) {
+        pulseReadout(`${input.value}/5 — ${RATING_LABELS[input.value]}`);
+      } else {
+        ratingReadout.textContent = `${input.value}/5 — ${RATING_LABELS[input.value]}`;
+        ratingHasBeenSelected = true;
+      }
+      toggleReq(ratingReq, false);
+    });
+
+    input.addEventListener("keydown", (e) => {
+      if (!["ArrowRight", "ArrowLeft", "ArrowUp", "ArrowDown"].includes(e.key)) return;
+      e.preventDefault();
+      const currentValue = Number(input.value);
+      const goingUp = e.key === "ArrowRight" || e.key === "ArrowUp";
+      const nextValue = goingUp ? Math.min(currentValue + 1, 5) : Math.max(currentValue - 1, 1);
+      const nextInput = form.querySelector(`input[name="rating"][value="${nextValue}"]`);
+      if (nextInput) {
+        nextInput.checked = true;
+        nextInput.focus();
+        nextInput.dispatchEvent(new Event("change", { bubbles: true }));
+      }
     });
   });
+
+  form.querySelectorAll(".stars label").forEach((label) => {
+    const starInput = document.getElementById(label.htmlFor);
+    label.addEventListener("mouseenter", () => {
+      if (form.querySelector('input[name="rating"]:checked')) return;
+      pulseReadout(`${starInput.value}/5 — ${RATING_LABELS[starInput.value]}`);
+    });
+  });
+
+  document.querySelector(".stars").addEventListener("mouseleave", () => {
+    if (form.querySelector('input[name="rating"]:checked')) return;
+    pulseReadout("Henüz puan seçilmedi.");
+  });
+
+  // Browsers can restore typed values / checked radios on page reload
+  // without firing input/change events, so sync the badges once on load.
+  const restoredRating = form.querySelector('input[name="rating"]:checked');
+  toggleReq(nameReq, form.firstName.value.trim().length < 3);
+  toggleReq(reviewReq, form.reviewText.value.trim().length < 15);
+  toggleReq(ratingReq, !restoredRating);
+  if (restoredRating) {
+    ratingReadout.textContent = `${restoredRating.value}/5 — ${RATING_LABELS[restoredRating.value]}`;
+    ratingHasBeenSelected = true;
+  }
 
   function setStatus(message, kind) {
     statusEl.textContent = message;
     statusEl.className = "status" + (kind ? " " + kind : "");
   }
+
+  const validationModal = document.getElementById("validationModal");
+  const modalOkBtn = document.getElementById("modalOkBtn");
+
+  function showValidationModal() {
+    validationModal.classList.add("open");
+  }
+
+  function hideValidationModal() {
+    validationModal.classList.remove("open");
+  }
+
+  modalOkBtn.addEventListener("click", hideValidationModal);
+  validationModal.addEventListener("click", (e) => {
+    if (e.target === validationModal) hideValidationModal();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      hideValidationModal();
+      closeServiceSelect();
+    }
+  });
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -307,28 +691,29 @@
     }
 
     const firstName = form.firstName.value.trim();
+    const service = serviceInput.value;
     const ratingInput = form.querySelector('input[name="rating"]:checked');
     const reviewText = form.reviewText.value.trim();
     const file = fileInput.files[0];
 
-    if (!firstName || !ratingInput || !reviewText) {
-      setStatus("Fill in your name, a rating, and a review.", "error");
+    if (!firstName || !service || !ratingInput || !reviewText) {
+      showValidationModal();
       return;
     }
 
     if (file) {
       if (!ALLOWED_TYPES.includes(file.type)) {
-        setStatus("That file type isn't supported. Use JPG, PNG, GIF or WebP.", "error");
+        setStatus("Bu dosya türü desteklenmiyor. JPG, PNG, GIF ya da WebP kullanınız.", "error");
         return;
       }
       if (file.size > MAX_BYTES) {
-        setStatus("That image is over 5 MB. Use a smaller file.", "error");
+        setStatus("Bu görsel 5 MB'ı aşıyor. Daha küçük bir dosya seçiniz.", "error");
         return;
       }
     }
 
     submitBtn.disabled = true;
-    setStatus("Sending…");
+    setStatus("Gönderiliyor…");
 
     try {
       let imagePath = null;
@@ -343,19 +728,22 @@
         imagePath = path;
       }
 
+      // Column names are Turkish so the Supabase Table Editor stays readable;
+      // they must be quoted exactly like this (see supabase-schema.sql).
       const { error: insertError } = await supabaseClient.from("reviews").insert({
-        first_name: firstName,
-        rating: Number(ratingInput.value),
-        review_text: reviewText,
-        image_path: imagePath,
-        is_approved: false,
+        "İsim": firstName,
+        "Hizmet": service,
+        "Puan": Number(ratingInput.value),
+        "Yorum": reviewText,
+        "Görsel Konumu": imagePath,
+        "Onay": false,
       });
       if (insertError) throw insertError;
 
       showConfirmation();
     } catch (err) {
       console.error(err);
-      setStatus("Something went wrong sending that. Try again in a moment.", "error");
+      setStatus("Yükleme sırasında bir şeyler ters gitti. Birazdan tekrar deneyiniz.", "error");
       submitBtn.disabled = false;
     }
   });
@@ -363,11 +751,11 @@
   function showConfirmation() {
     panel.innerHTML = `
       <div class="confirm">
-        <p class="signal">STATUS: RECEIVED</p>
-        <h2>Review received</h2>
-        <p>It's in the queue and will appear on the site once it's checked.</p>
+        <h2>Yorum Alındı! ⭐️</h2>
+        <p>Yorumunuz sırada bekliyor, kontrol edildikten sonra sitede görünecek.</p>
       </div>
     `;
+    panel.classList.add("confirm-in");
   }
 </script>
 
