@@ -8,21 +8,80 @@
      <link rel="icon" type="image/svg+xml" href="favicon.svg"> -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- Fredoka yalnızca başlıklarda ve yalnızca 500'de kullanılıyor, bold ağırlıkları
+     bilinçli olarak yüklenmiyor: karşı boşlukları 500 üstünde kapanıp metni
+     bloğa çeviriyordu. Arayüz metni Nunito Sans — o da yuvarlak, ama metin
+     boyutları için çizildiği için küçük puntoda açık kalıyor. -->
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
+  /* Nötr Antrasit — varsayılan tema. Nötrler bakıra doğru hafif sıcak
+     tutuldu ki aksan rengi yabancı durmasın. Her renk token olmak zorunda:
+     tek bir sabit hex kalırsa açık temada o eleman ters düşer. */
   :root {
-    --bg: #0d1811;
-    --panel: #142a1e;
-    --panel-border: #23402d;
-    --text-main: #eef2ee;
-    --text-muted: #96ac9f;
+    --bg: #141311;
+    --panel: #1d1b18;
+    --panel-border: #2f2b26;
+    --field-bg: #161513;
+    --text-main: #edeae5;
+    --text-muted: #a09a91;
     --copper: #c6824f;
     --copper-dim: #8a5c37;
+    --copper-bright: #d4915c;
+    --copper-wash: rgba(198, 130, 79, 0.15);
+    --on-copper: #14100b;
+    --star-empty: #3a352e;
+    --overlay: rgba(8, 7, 6, 0.55);
+    --glow: rgba(198, 130, 79, 0.05);
     --signal: #7fd8a0;
     --danger: #e2685a;
-    --font-body: "Fredoka", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    --font-body: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
     --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
     --font-heading: "Fredoka", var(--font-body);
+  }
+
+  /* Açık tema. Varsayılan koyu olduğu için media query LIGHT'ı hedefliyor.
+     :not([data-theme="dark"]) koruması, tema düğmesiyle koyuyu seçen bir
+     ziyaretçinin işletim sistemi açık temadayken de koyuda kalmasını
+     sağlıyor. Düğme kök elemana data-theme="light" / "dark" basıyor. */
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #eaeeeb;
+      --panel: #fbfcfb;
+      --panel-border: #cfd8d2;
+      --field-bg: #f2f4f2;
+      --text-main: #16211a;
+      --text-muted: #5d6b62;
+      --copper: #9d5a29;
+      --copper-dim: #b98352;
+      --copper-bright: #85471d;
+      --copper-wash: rgba(157, 90, 41, 0.12);
+      --on-copper: #ffffff;
+      --star-empty: #ccd3cd;
+      --overlay: rgba(20, 30, 24, 0.4);
+      --glow: rgba(157, 90, 41, 0.05);
+      --signal: #226b45;
+      --danger: #b8402f;
+    }
+  }
+
+  /* Düğmeyle açık tema seçilirse işletim sistemi koyuda olsa bile kazanır. */
+  :root[data-theme="light"] {
+    --bg: #eaeeeb;
+    --panel: #fbfcfb;
+    --panel-border: #cfd8d2;
+    --field-bg: #f2f4f2;
+    --text-main: #16211a;
+    --text-muted: #5d6b62;
+    --copper: #9d5a29;
+    --copper-dim: #b98352;
+    --copper-bright: #85471d;
+    --copper-wash: rgba(157, 90, 41, 0.12);
+    --on-copper: #ffffff;
+    --star-empty: #ccd3cd;
+    --overlay: rgba(20, 30, 24, 0.4);
+    --glow: rgba(157, 90, 41, 0.05);
+    --signal: #226b45;
+    --danger: #b8402f;
   }
 
   * { box-sizing: border-box; }
@@ -35,7 +94,7 @@
     justify-content: center;
     padding: 32px 20px;
     background:
-      radial-gradient(circle at 15% 10%, rgba(198,130,79,0.05), transparent 40%),
+      radial-gradient(circle at 15% 10%, var(--glow), transparent 40%),
       var(--bg);
     font-family: var(--font-body);
     color: var(--text-main);
@@ -48,6 +107,88 @@
     border: 1px solid var(--panel-border);
     border-radius: 10px;
     padding: 40px 36px;
+  }
+
+  header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* Tema anahtarı. Referanstaki hap biçimi yerine dikdörtgen: oran 2:1,
+     köşeler yalnızca hafifçe yuvarlatıldı (sipsivri değil, hap da değil). */
+  .theme-switch {
+    flex: none;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    line-height: 0;
+    border-radius: 8px;
+    outline: none;
+  }
+
+  .switch-track {
+    display: block;
+    position: relative;
+    width: 56px;
+    height: 28px;
+    padding: 3px;
+    border-radius: 7px;
+    border: 1px solid var(--panel-border);
+    background: var(--field-bg);
+    transition: background 180ms ease, border-color 180ms ease;
+  }
+
+  .theme-switch:focus-visible .switch-track {
+    border-color: var(--copper);
+    box-shadow: 0 0 0 2px var(--copper-wash);
+  }
+
+  .switch-knob {
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+    background: var(--text-muted);
+    color: var(--panel);
+    transform: translateX(0);
+    transition: transform 200ms cubic-bezier(0.3, 0.9, 0.4, 1), background 180ms ease, color 180ms ease;
+  }
+
+  /* Koyu tema açık: iz bakırla dolu, tuş sağda. */
+  .theme-switch[aria-checked="true"] .switch-track {
+    background: var(--copper);
+    border-color: var(--copper);
+  }
+
+  .theme-switch[aria-checked="true"] .switch-knob {
+    /* 56 - 2*3 padding - 22 tuş = 28px yol */
+    transform: translateX(28px);
+    background: var(--panel);
+    color: var(--copper);
+  }
+
+  .theme-switch[aria-checked="true"] .icon-moon,
+  .theme-switch[aria-checked="false"] .icon-sun {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .switch-knob, .switch-track { transition: none; }
   }
 
   header h1 {
@@ -68,6 +209,16 @@
 
   .field { margin-bottom: 24px; }
 
+  .field-hidden { display: none; }
+
+  /* Entrance only. The options list is absolutely positioned, so animating
+     a height collapse here would clip the dropdown while it is open. */
+  @keyframes fieldIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: none; }
+  }
+  .field-reveal { animation: fieldIn 180ms ease; }
+
   label {
     display: flex;
     align-items: center;
@@ -75,6 +226,9 @@
     font-size: 14px;
     font-weight: 600;
     margin-bottom: 8px;
+    /* Yorum rozeti uzun ("gerekli / en az 15 karakter"); çok dar ekranda
+       taşmak yerine alt satıra insin. */
+    flex-wrap: wrap;
   }
 
   .refdes {
@@ -105,7 +259,7 @@
     font-size: 15px;
     font-family: inherit;
     color: var(--text-main);
-    background: #0f1f16;
+    background: var(--field-bg);
     border: 1px solid var(--panel-border);
     border-radius: 6px;
     outline: none;
@@ -140,7 +294,7 @@
     border: 1px dashed var(--panel-border);
     border-radius: 6px;
     padding: 12px 14px;
-    background: #0f1f16;
+    background: var(--field-bg);
   }
 
   .select-wrap {
@@ -156,7 +310,7 @@
     font-size: 15px;
     font-family: inherit;
     color: var(--text-main);
-    background: #0f1f16;
+    background: var(--field-bg);
     border: 1px solid var(--panel-border);
     border-radius: 6px;
     cursor: pointer;
@@ -169,7 +323,7 @@
     border-color: var(--copper);
   }
 
-  #serviceValue.placeholder {
+  .select-trigger .placeholder {
     color: var(--text-muted);
   }
 
@@ -217,7 +371,7 @@
 
   .select-options li:hover,
   .select-options li.active {
-    background: rgba(198, 130, 79, 0.15);
+    background: var(--copper-wash);
     color: var(--signal);
   }
 
@@ -250,7 +404,7 @@
     display: inline-block;
     font-size: 26px;
     line-height: 1;
-    color: #2c4636;
+    color: var(--star-empty);
     cursor: pointer;
     margin: 0;
     user-select: none;
@@ -277,10 +431,11 @@
   .submit-btn {
     width: 100%;
     background: var(--copper);
-    color: #14100b;
+    color: var(--on-copper);
     padding: 13px 20px;
     font-size: 15px;
-    font-weight: 650;
+    font-weight: 700;
+    letter-spacing: 0.01em;
     font-family: inherit;
     border: none;
     border-radius: 6px;
@@ -288,7 +443,7 @@
     transition: background 0.15s, opacity 0.15s, transform 0.1s ease;
   }
 
-  .submit-btn:hover { background: #d4915c; }
+  .submit-btn:hover { background: var(--copper-bright); }
   .submit-btn:active { transform: scale(0.96); }
   .submit-btn:disabled { opacity: 0.55; cursor: not-allowed; }
 
@@ -327,7 +482,7 @@
   .modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(4, 10, 6, 0.55);
+    background: var(--overlay);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
     display: flex;
@@ -370,27 +525,72 @@
 
   .modal-ok-btn {
     background: var(--copper);
-    color: #14100b;
+    color: var(--on-copper);
     border: none;
     border-radius: 6px;
     padding: 10px 30px;
     font-size: 14px;
-    font-weight: 650;
+    font-weight: 700;
+    letter-spacing: 0.01em;
     font-family: inherit;
     cursor: pointer;
     transition: background 0.15s, transform 0.1s ease;
   }
 
-  .modal-ok-btn:hover { background: #d4915c; }
+  .modal-ok-btn:hover { background: var(--copper-bright); }
   .modal-ok-btn:active { transform: scale(0.96); }
 </style>
+
+<!-- Kayıtlı tema tercihi, sayfa BOYANMADAN önce uygulanmalı. Bu blok <body>'nin
+     sonundaki script'e taşınırsa ziyaretçi bir kare yanlış temayı görür ve sayfa
+     zıplar (FOUC). Tercih yoksa hiçbir şey basılmaz; o zaman CSS'teki
+     prefers-color-scheme devreye girer, varsayılan koyudur.
+     localStorage gizli sekmede / çerezler engelliyken throw edebilir. -->
+<script>
+  try {
+    var kayitli = localStorage.getItem("hazefix-theme");
+    if (kayitli === "light" || kayitli === "dark") {
+      document.documentElement.dataset.theme = kayitli;
+    }
+  } catch (e) {}
+</script>
 </head>
 <body>
 
 <main class="panel" id="panel">
   <header>
-    <h1>Yorum Bırak</h1>
-    <p class="lede">Proje ya da tamir ile ilgili düşündüklerinizi anlatınız. Her yorum yayınlanmadan önce kontrol aşamasından geçecek.</p>
+    <div class="head-text">
+      <h1>Yorum Bırak</h1>
+      <p class="lede">Proje ya da tamir ile ilgili düşündüklerinizi anlatınız. Her yorum yayınlanmadan önce kontrol aşamasından geçecek.</p>
+    </div>
+
+    <!-- aria-checked="true" = koyu tema açık. Simge eylemi gösteriyor:
+         koyudayken güneş ("aydınlığa geç"), aydınlıktayken ay. -->
+    <button type="button" id="themeToggle" class="theme-switch" role="switch" aria-checked="true">
+      <span class="switch-track">
+        <span class="switch-knob">
+          <svg class="icon-sun" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4.2"></circle>
+            <path d="M12 1.8v2.4M12 19.8v2.4M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M1.8 12h2.4M19.8 12h2.4M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7"></path>
+          </svg>
+          <!-- Bu hilal YATAY EKSENE SİMETRİK, ve bu bilinçli bir karar.
+               Klasik eğik hilalde (Feather/Lucide tipi) oyuk sağ-üstte kalıyor;
+               kütle sol-alta yığıldığı için sınırlayıcı kutuya göre ortalayınca
+               göz ikonu aşağıda, kütleye göre ortalayınca yukarıda görüyor.
+               İkisinin ortası da dengeyi kurmadı — sorun konumda değil şekilde.
+               Burada dış çember (12,12) r=9 ve ısırık çemberi (16,12) r=7.5
+               aynı yatay eksende, dolayısıyla DİKEY hata matematiksel olarak
+               sıfır: ölçümde kutu merkezi 11.98, kütle merkezi 11.97.
+               Geriye yalnızca yatay fark kalıyor (kutu 10.00, kütle 8.83);
+               aşağıdaki kayma onu ortadan bölüyor.
+               Eğik bir hilale dönersen bu garanti kaybolur. -->
+          <svg class="icon-moon" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+            <path transform="translate(2.59 0)" d="M17.09 4.58A9 9 0 1 0 17.09 19.42A7.5 7.5 0 0 1 17.09 4.58Z"></path>
+          </svg>
+        </span>
+      </span>
+      <span class="sr-only" id="themeToggleText">Koyu tema açık</span>
+    </button>
   </header>
 
   <form id="reviewForm" novalidate autocomplete="off">
@@ -421,6 +621,22 @@
       <input type="hidden" id="serviceInput" name="service">
     </div>
 
+    <div class="field field-hidden" id="deviceField">
+      <label id="deviceLabel"><span class="field-name"><span class="refdes"></span>Cihaz Modeli</span> <span class="req" id="deviceReq">(gerekli)</span></label>
+      <div class="select-wrap" id="deviceSelect">
+        <button type="button" class="select-trigger" id="deviceTrigger" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="deviceLabel">
+          <span id="deviceValue" class="placeholder">Seçiniz</span>
+          <span class="select-arrow">▾</span>
+        </button>
+        <ul class="select-options" id="deviceOptions" role="listbox">
+          <li role="option" id="device-opt-0" data-value="Switch v1/v2">Switch v1/v2</li>
+          <li role="option" id="device-opt-1" data-value="Switch Lite">Switch Lite</li>
+          <li role="option" id="device-opt-2" data-value="Switch OLED">Switch OLED</li>
+        </ul>
+      </div>
+      <input type="hidden" id="deviceInput" name="deviceModel">
+    </div>
+
     <div class="field">
       <label for="imageUpload"><span class="field-name"><span class="refdes"></span>Fotoğraf</span> <span class="opt">(opsiyonel)</span></label>
       <div class="dropzone">
@@ -442,7 +658,7 @@
     </div>
 
     <div class="field">
-      <label for="reviewText"><span class="field-name"><span class="refdes"></span>Yorum</span> <span class="req" id="reviewReq">(gerekli)</span></label>
+      <label for="reviewText"><span class="field-name"><span class="refdes"></span>Yorum</span> <span class="req" id="reviewReq">(gerekli / en az 15 karakter)</span></label>
       <textarea id="reviewText" name="review" required maxlength="2000"></textarea>
     </div>
 
@@ -471,6 +687,14 @@
   const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
   const RATING_LABELS = { 1: "Berbat", 2: "Kötü", 3: "Orta", 4: "İyi", 5: "Mükemmel" };
 
+  // Hem (gerekli) rozetinin görünürlüğünü hem de gönderim doğrulamasını bu iki
+  // sayı belirliyor. Tek yerde durmaları şart: ayrı yazılırlarsa rozet "eksik"
+  // derken form gönderilebilir hale gelir (2026-09-02'ye kadar tam olarak bu
+  // oluyordu). Yorum eşiği "iyi" gibi tek kelimelik girişleri elemek için
+  // bilinçli olarak yüksek.
+  const NAME_MIN = 3;
+  const REVIEW_MIN = 15;
+
   const form = document.getElementById("reviewForm");
   form.reset();
 
@@ -483,113 +707,204 @@
   const ratingReq = document.getElementById("ratingReq");
   const reviewReq = document.getElementById("reviewReq");
   const serviceReq = document.getElementById("serviceReq");
-  const serviceTrigger = document.getElementById("serviceTrigger");
-  const serviceOptions = document.getElementById("serviceOptions");
-  const serviceValue = document.getElementById("serviceValue");
-  const serviceInput = document.getElementById("serviceInput");
-  const serviceOptionEls = Array.from(serviceOptions.querySelectorAll("li"));
+  const deviceReq = document.getElementById("deviceReq");
+  const deviceField = document.getElementById("deviceField");
 
   function toggleReq(badge, show) {
     badge.classList.toggle("req-hidden", !show);
   }
 
-  let serviceActiveIndex = -1;
+  // --- Tema anahtarı ---
+  // Renkler tamamen CSS token'larından geliyor; buranın tek işi kök elemana
+  // data-theme basmak ve tercihi saklamak. <head>'deki küçük script aynı
+  // tercihi sayfa boyanmadan önce uyguluyor.
+  const THEME_KEY = "hazefix-theme";
+  const themeToggle = document.getElementById("themeToggle");
+  const themeToggleText = document.getElementById("themeToggleText");
+  const lightQuery = window.matchMedia("(prefers-color-scheme: light)");
 
-  function highlightServiceOption(index) {
-    serviceActiveIndex = index;
-    serviceOptionEls.forEach((li, i) => {
-      li.classList.toggle("active", i === index);
+  // Varsayılan koyu. Açık tema yalnızca açıkça seçilmişse ya da seçim yokken
+  // işletim sistemi açık temadaysa geçerli.
+  function aktifTema() {
+    const secili = document.documentElement.dataset.theme;
+    if (secili === "light" || secili === "dark") return secili;
+    return lightQuery.matches ? "light" : "dark";
+  }
+
+  function temayiYansit(tema) {
+    const koyu = tema === "dark";
+    themeToggle.setAttribute("aria-checked", String(koyu));
+    themeToggleText.textContent = koyu ? "Koyu tema açık" : "Açık tema açık";
+  }
+
+  temayiYansit(aktifTema());
+
+  themeToggle.addEventListener("click", () => {
+    const yeni = aktifTema() === "dark" ? "light" : "dark";
+    document.documentElement.dataset.theme = yeni;
+    try {
+      localStorage.setItem(THEME_KEY, yeni);
+    } catch (e) {
+      // Gizli sekmede / çerezler engelliyken yazamayız; tema yine de değişir,
+      // sadece bir sonraki ziyarette hatırlanmaz.
+    }
+    temayiYansit(yeni);
+  });
+
+  // Ziyaretçi henüz elle seçim yapmadıysa işletim sistemi değişimini takip et.
+  lightQuery.addEventListener("change", () => {
+    if (!document.documentElement.dataset.theme) temayiYansit(aktifTema());
+  });
+
+  // Alan etiketleri tıklanınca alanı odaklamıyor. <label for="..."> normalde
+  // tıklamayı kendi kontrolüne yönlendirir; burada bu istenmiyor, çünkü
+  // etikete ya da (gerekli) rozetine değen her tıklama metin kutusunu açıyor,
+  // Fotoğraf'ta ise dosya seçiciyi başlatıyordu.
+  // Yıldızlar hariç tutuldu: onlar da <label for> ama tıklamayla puan seçmek
+  // tam olarak istenen davranış.
+  // for= nitelikleri duruyor, yani ekran okuyucu için etiket-alan bağı bozulmadı;
+  // değişen yalnızca tıklama davranışı.
+  form.addEventListener("click", (e) => {
+    const label = e.target.closest("label");
+    if (label && !label.closest(".stars")) e.preventDefault();
+  });
+
+  // "Verilen Hizmet" and "Cihaz Modeli" are the same custom listbox, so the
+  // behaviour lives here once. Elements are looked up from `prefix`:
+  // "service" -> #serviceSelect / #serviceTrigger / #serviceOptions /
+  // #serviceValue / #serviceInput.
+  function createSelect(prefix, reqBadge, onSelect) {
+    const wrap = document.getElementById(prefix + "Select");
+    const trigger = document.getElementById(prefix + "Trigger");
+    const list = document.getElementById(prefix + "Options");
+    const valueEl = document.getElementById(prefix + "Value");
+    const input = document.getElementById(prefix + "Input");
+    const optionEls = Array.from(list.querySelectorAll("li"));
+    const placeholderText = valueEl.textContent;
+    let activeIndex = -1;
+
+    function highlight(index) {
+      activeIndex = index;
+      optionEls.forEach((li, i) => {
+        li.classList.toggle("active", i === index);
+      });
+      if (index >= 0) {
+        trigger.setAttribute("aria-activedescendant", optionEls[index].id);
+      } else {
+        trigger.removeAttribute("aria-activedescendant");
+      }
+    }
+
+    function open() {
+      list.classList.add("open");
+      trigger.classList.add("open");
+      trigger.setAttribute("aria-expanded", "true");
+      const currentIndex = optionEls.findIndex((li) => li.dataset.value === input.value);
+      highlight(currentIndex >= 0 ? currentIndex : 0);
+    }
+
+    function close() {
+      list.classList.remove("open");
+      trigger.classList.remove("open");
+      trigger.setAttribute("aria-expanded", "false");
+      highlight(-1);
+    }
+
+    function select(index) {
+      const li = optionEls[index];
+      if (!li) return;
+      valueEl.textContent = li.dataset.value;
+      valueEl.classList.remove("placeholder");
+      input.value = li.dataset.value;
+      toggleReq(reqBadge, false);
+      close();
+      if (onSelect) onSelect(li.dataset.value);
+    }
+
+    function clear() {
+      valueEl.textContent = placeholderText;
+      valueEl.classList.add("placeholder");
+      input.value = "";
+      toggleReq(reqBadge, true);
+      close();
+    }
+
+    trigger.addEventListener("click", () => {
+      if (list.classList.contains("open")) {
+        close();
+      } else {
+        open();
+      }
     });
-    if (index >= 0) {
-      serviceTrigger.setAttribute("aria-activedescendant", serviceOptionEls[index].id);
-    } else {
-      serviceTrigger.removeAttribute("aria-activedescendant");
-    }
-  }
 
-  function openServiceSelect() {
-    serviceOptions.classList.add("open");
-    serviceTrigger.classList.add("open");
-    serviceTrigger.setAttribute("aria-expanded", "true");
-    const currentIndex = serviceOptionEls.findIndex((li) => li.dataset.value === serviceInput.value);
-    highlightServiceOption(currentIndex >= 0 ? currentIndex : 0);
-  }
-
-  function closeServiceSelect() {
-    serviceOptions.classList.remove("open");
-    serviceTrigger.classList.remove("open");
-    serviceTrigger.setAttribute("aria-expanded", "false");
-    highlightServiceOption(-1);
-  }
-
-  function selectServiceOption(index) {
-    const li = serviceOptionEls[index];
-    if (!li) return;
-    serviceValue.textContent = li.dataset.value;
-    serviceValue.classList.remove("placeholder");
-    serviceInput.value = li.dataset.value;
-    toggleReq(serviceReq, false);
-    closeServiceSelect();
-  }
-
-  serviceTrigger.addEventListener("click", () => {
-    if (serviceOptions.classList.contains("open")) {
-      closeServiceSelect();
-    } else {
-      openServiceSelect();
-    }
-  });
-
-  serviceTrigger.addEventListener("keydown", (e) => {
-    const isOpen = serviceOptions.classList.contains("open");
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      if (!isOpen) {
-        openServiceSelect();
-      } else {
-        highlightServiceOption(Math.min(serviceActiveIndex + 1, serviceOptionEls.length - 1));
+    trigger.addEventListener("keydown", (e) => {
+      const isOpen = list.classList.contains("open");
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        if (!isOpen) {
+          open();
+        } else {
+          highlight(Math.min(activeIndex + 1, optionEls.length - 1));
+        }
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        if (!isOpen) {
+          open();
+        } else {
+          highlight(Math.max(activeIndex - 1, 0));
+        }
+      } else if ((e.key === "Enter" || e.key === " ") && isOpen) {
+        e.preventDefault();
+        select(activeIndex);
       }
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      if (!isOpen) {
-        openServiceSelect();
-      } else {
-        highlightServiceOption(Math.max(serviceActiveIndex - 1, 0));
-      }
-    } else if ((e.key === "Enter" || e.key === " ") && isOpen) {
-      e.preventDefault();
-      selectServiceOption(serviceActiveIndex);
-    }
-  });
+    });
 
-  // Mousedown on an option would blur the trigger, and the focusout handler
-  // below closes the list (pointer-events: none) before the click can land.
-  // Suppressing the default keeps focus on the trigger so the click fires.
-  serviceOptions.addEventListener("mousedown", (e) => e.preventDefault());
+    // Mousedown on an option would blur the trigger, and the focusout handler
+    // below closes the list (pointer-events: none) before the click can land.
+    // Suppressing the default keeps focus on the trigger so the click fires.
+    list.addEventListener("mousedown", (e) => e.preventDefault());
 
-  serviceOptionEls.forEach((li, index) => {
-    li.addEventListener("click", () => selectServiceOption(index));
-    li.addEventListener("mouseenter", () => highlightServiceOption(index));
-  });
+    optionEls.forEach((li, index) => {
+      li.addEventListener("click", () => select(index));
+      li.addEventListener("mouseenter", () => highlight(index));
+    });
 
-  document.addEventListener("click", (e) => {
-    if (!document.getElementById("serviceSelect").contains(e.target)) {
-      closeServiceSelect();
-    }
-  });
+    document.addEventListener("click", (e) => {
+      if (!wrap.contains(e.target)) close();
+    });
 
-  document.getElementById("serviceSelect").addEventListener("focusout", (e) => {
-    if (!document.getElementById("serviceSelect").contains(e.relatedTarget)) {
-      closeServiceSelect();
+    wrap.addEventListener("focusout", (e) => {
+      if (!wrap.contains(e.relatedTarget)) close();
+    });
+
+    return {
+      close,
+      clear,
+      get value() { return input.value; },
+    };
+  }
+
+  // The only service that needs a device model.
+  const CHIP_SERVICE = "Nintendo Switch - Çipleme";
+
+  const deviceSelect = createSelect("device", deviceReq);
+  const serviceSelect = createSelect("service", serviceReq, (value) => {
+    if (value === CHIP_SERVICE) {
+      deviceField.classList.remove("field-hidden", "field-reveal");
+      void deviceField.offsetWidth; // restart the entrance animation
+      deviceField.classList.add("field-reveal");
+    } else {
+      deviceField.classList.add("field-hidden");
+      deviceSelect.clear();
     }
   });
 
   form.firstName.addEventListener("input", () => {
-    toggleReq(nameReq, form.firstName.value.trim().length < 3);
+    toggleReq(nameReq, form.firstName.value.trim().length < NAME_MIN);
   });
 
   form.reviewText.addEventListener("input", () => {
-    toggleReq(reviewReq, form.reviewText.value.trim().length < 15);
+    toggleReq(reviewReq, form.reviewText.value.trim().length < REVIEW_MIN);
   });
 
   function pulseReadout(text) {
@@ -645,8 +960,8 @@
   // Browsers can restore typed values / checked radios on page reload
   // without firing input/change events, so sync the badges once on load.
   const restoredRating = form.querySelector('input[name="rating"]:checked');
-  toggleReq(nameReq, form.firstName.value.trim().length < 3);
-  toggleReq(reviewReq, form.reviewText.value.trim().length < 15);
+  toggleReq(nameReq, form.firstName.value.trim().length < NAME_MIN);
+  toggleReq(reviewReq, form.reviewText.value.trim().length < REVIEW_MIN);
   toggleReq(ratingReq, !restoredRating);
   if (restoredRating) {
     ratingReadout.textContent = `${restoredRating.value}/5 — ${RATING_LABELS[restoredRating.value]}`;
@@ -660,8 +975,27 @@
 
   const validationModal = document.getElementById("validationModal");
   const modalOkBtn = document.getElementById("modalOkBtn");
+  const modalMsg = document.getElementById("modalMsg");
 
-  function showValidationModal() {
+  // Yalnızca gerçekten eksik olan alanlar sayılıyor; hepsini listelemek,
+  // doldurulmuş alanları da eksikmiş gibi gösteriyordu.
+  // Alan adları kalın ve yukarıdaki etiketlerle birebir aynı yazılmalı.
+  // Türkçe ek tekil/çoğul olarak değişiyor: tek eksikte "alanını",
+  // birden fazlada "alanlarını".
+  // "A, B ve C" — Türkçe liste grameri. Tek elemanda bağlaç yok.
+  function birlestir(parcalar) {
+    const kopya = parcalar.slice();
+    const son = kopya.pop();
+    return kopya.length ? `${kopya.join(", ")} ve ${son}` : son;
+  }
+
+  // Tek cümle. Karakter eşiği bilgisi etiketteki "(en az N karakter yazınız)"
+  // rozetinde durduğu için modalda tekrarlanmıyor — eşiğin altında kalan alan
+  // da burada sadece "doldurulmamış" sayılıyor.
+  function showValidationModal(missing) {
+    const list = birlestir(missing.map((name) => `<strong>${name}</strong>`));
+    const suffix = missing.length === 1 ? "alanını" : "alanlarını";
+    modalMsg.innerHTML = `${list} ${suffix} doldurunuz.`;
     validationModal.classList.add("open");
   }
 
@@ -676,7 +1010,8 @@
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       hideValidationModal();
-      closeServiceSelect();
+      serviceSelect.close();
+      deviceSelect.close();
     }
   });
 
@@ -691,13 +1026,25 @@
     }
 
     const firstName = form.firstName.value.trim();
-    const service = serviceInput.value;
+    const service = serviceSelect.value;
+    const needsDeviceModel = service === CHIP_SERVICE;
+    const deviceModel = deviceSelect.value;
     const ratingInput = form.querySelector('input[name="rating"]:checked');
     const reviewText = form.reviewText.value.trim();
     const file = fileInput.files[0];
 
-    if (!firstName || !service || !ratingInput || !reviewText) {
-      showValidationModal();
+    // Sıra formdaki alan sırasıyla aynı tutuluyor ki kullanıcı yukarıdan
+    // aşağıya okurken karşılığını bulsun. Eşikler rozetlerle aynı sabitlerden
+    // geliyor: rozet "(gerekli)" diyorsa gönderim de gerçekten engelleniyor.
+    const missing = [];
+    if (firstName.length < NAME_MIN) missing.push("İsim");
+    if (!service) missing.push("Verilen Hizmet");
+    if (needsDeviceModel && !deviceModel) missing.push("Cihaz Modeli");
+    if (!ratingInput) missing.push("Puan");
+    if (reviewText.length < REVIEW_MIN) missing.push("Yorum");
+
+    if (missing.length) {
+      showValidationModal(missing);
       return;
     }
 
@@ -733,6 +1080,7 @@
       const { error: insertError } = await supabaseClient.from("reviews").insert({
         "İsim": firstName,
         "Hizmet": service,
+        "Cihaz Modeli": needsDeviceModel ? deviceModel : null,
         "Puan": Number(ratingInput.value),
         "Yorum": reviewText,
         "Görsel Konumu": imagePath,
@@ -748,6 +1096,10 @@
     }
   });
 
+  // Onay ekranında tema anahtarı bilinçli olarak YOK: panelin tamamı
+  // değiştiği için anahtar da gider. Kullanıcı kararı — geri istenirse
+  // düğümü innerHTML ile yeniden yazmak yerine taşımak gerekir, yoksa
+  // üzerindeki click dinleyicisi kaybolur.
   function showConfirmation() {
     panel.innerHTML = `
       <div class="confirm">

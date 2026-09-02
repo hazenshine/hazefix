@@ -7,8 +7,10 @@ review-form.html
 
 # Gizli / makineye özel
 .claude/settings.local.json
+.claude/launch.json
 .env
 *.local
+*.local.html
 .DS_Store
 supabase/.temp/
 supabase/.branches/
