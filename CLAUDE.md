@@ -22,13 +22,21 @@
 
 ```
 / (repo kökü)
-├── index.html          # review-form.html'in GitHub'a yüklenmiş hali, tek sayfa
-├── favicon.svg          # Kullanıcının çizdiği logo, sekme ikonu
-└── CNAME                 # GitHub Pages custom domain dosyası (hazefix.org)
+├── index.html                     # TEK KAYNAK. Site bu dosya. ~763 satır, HTML+CSS+JS bir arada.
+├── CNAME                          # GitHub Pages custom domain (hazefix.org)
+├── supabase-schema.sql            # Veritabanının doğrulanmış aynası, idempotent
+├── migration-turkce-sutunlar.sql  # 2026-09-02'de uygulandı, arşiv
+├── CLAUDE.md                      # bu dosya
+└── .gitignore
 ```
 
-Yerel geliştirme dosyaları (repo dışında, teslimat öncesi):
-- `review-form.html` — asıl kaynak dosya, ~760 satır (HTML+CSS+JS tek dosyada).
+**Doğrudan `index.html` üzerinde çalışılır.** Eskiden `review-form.html` kaynak, `index.html`
+elle kopyalanan çıktısıydı; ikisi senkronize edilmeyi unutulduğu için canlı site aylarca eski
+sürümde kaldı ve form kırıldı. Bu ikilik kaldırıldı — `review-form.html` artık `.gitignore`'da,
+kalıntı bir kopya. Silinebilir.
+
+`favicon.svg` **yok**: ne repoda ne diskte bulundu (`find ~` ile arandı). `index.html` içindeki
+`<link rel="icon">` satırı yorum satırına alındı, logo bulunursa geri açılacak.
 - `supabase-schema.sql` — idempotent (tekrar çalıştırılabilir) tam şema dosyası, sıfırdan kurulum için. Türkçe sütun adlarını yansıtır.
 - `migration-turkce-sutunlar.sql` — mevcut veritabanını İngilizce sütun adlarından Türkçe adlara geçiren idempotent geçiş dosyası. Bir kere çalıştırıldıktan sonra artık gerekli değil ama zararsız.
 
@@ -83,6 +91,20 @@ Yerel geliştirme dosyaları (repo dışında, teslimat öncesi):
 - Sütun adları Table Editor'den elle değiştirilince (`is_approved` → `Onay`) gönderim sessizce hata veriyordu; JS hâlâ eski adları yolluyordu, PostgREST "sütun yok" dönüyordu → tüm sütunlar Türkçe adlara geçirildi ve `insert()` payload'ı birebir eşitlendi. **Ders: Table Editor'den sütun adı değiştirilirse `review-form.html` içindeki `insert()` da güncellenmeli.**
 - Yıldız puanlama ok tuşları native DOM sırasını (5,4,3,2,1) takip ettiği için sağ/yukarı azaltıyor, sol/aşağı artırıyordu → `keydown` listener'da `preventDefault()` + elle yön mantığı.
 
+### Tuzak: `insert()` sonrası `.select()` çağırmayın
+
+`insert()`'e `.select()` eklemek (ya da REST'e `Prefer: return=representation` göndermek)
+`INSERT ... RETURNING` üretir. Postgres, RETURNING için **SELECT policy'sini de** uygular.
+Yeni satır `"Onay" = false` ile eklendiğinden, `using ("Onay" = true)` olan SELECT policy'si
+onu göremez ve istek `42501 new row violates row-level security policy` ile reddedilir —
+oysa INSERT policy'si tamamen doğrudur.
+
+Bu, 2026-09-02'de uçtan uca test sırasında yaşandı ve teşhisi yanlış yöne çekti. Doğrudan
+`set role anon; insert ...` psql'de sorunsuz çalışıyordu; fark yalnızca RETURNING'di.
+`Prefer: return=minimal` ile istek `201` döndü. supabase-js `.insert()` zaten `.select()`
+zincirlenmediği sürece minimal davranır, yani mevcut kod doğru — ama ileride "eklenen satırı
+geri alalım" diye `.select()` eklenirse form sessizce kırılır.
+
 ## 4. Yol Haritası
 
 Yeni bir sohbet açarken tek cümle yeterli: *"yol haritasından N. maddeyi yapalım."* Bu dosya
@@ -90,8 +112,8 @@ otomatik yüklendiği için bağlamı ayrıca anlatmaya gerek yok. Sıra bağım
 
 | # | İş | Boyut | Durum / bağımlılık |
 |---|---|---|---|
-| 1 | **Güncel formu yayına al** | 20 dk | **ACİL — yayındaki form kırık.** DB yeni şemada ama canlı `index.html` 375 satırlık eski İngilizce sürüm, `is_approved` gönderiyor. `review-form.html` → `index.html` push edilecek. Önce 2. madde çözülmeli. |
-| 2 | **`favicon.svg`** | 5 dk | Repoda yok, `review-form.html` ona link veriyor → yayına girince 404. Kullanıcıda yerelde var mı, yeniden mi üretilecek, yoksa link mi kaldırılacak — karar bekliyor. |
+| 1 | **Enforce HTTPS** | 1 dk | Sertifika hazır ama `https_enforced: false`. Settings → Pages'te kutu işaretlenecek. Tek kalan güvenlik adımı. |
+| 2 | **`favicon.svg`** | 5 dk | Dosya kayıp, link yorum satırında. Logo bulunursa eklenecek; yoksa yeni bir ikon tasarlanacak. |
 | 3 | **Supabase keepalive** | 20 dk | Free plan 7 gün istek almazsa projeyi duraklatıyor; site trafiği yok, duraklama kaçınılmaz. Harici cron servisi (cron-job.org / UptimeRobot) önerildi — GitHub Actions cron'u 60 gün commit almayan repolarda kendiliğinden devre dışı bıraktığı için bu iş için güvenilmez. |
 | 4 | **Onaylı yorumları listeleyen bölüm** | 1-2 saat | RLS policy ve `reviews_onayli_tarih_idx` hazır, sadece tüketen taraf eksik. Anasayfaya gömülecekse 5. maddeyle birlikte yapılmalı. |
 | 5 | **Anasayfa / portföy** | Büyük | Projenin asıl eksiği. Şu an tek sayfa var, o da review formu. Hero, verilen hizmetler, proje galerisi, iletişim. |
@@ -115,5 +137,6 @@ Not: Supabase ayarlarındaki CAPTCHA koruması yalnızca **auth** uç noktaları
 insert'ine etkisi yoktur. Gerçek spam görülene kadar ertelenmesi kararlaştırıldı.
 
 ### Kapanmış maddeler
+- ~~Güncel formu yayına al~~ — 2026-09-02'de push edildi (commit `937b373`). Canlıda doğrulandı: `lang="tr"`, Türkçe sütun adları, dropdown tıklaması, konsol hatası yok, `is_approved` izi kalmadı.
 - ~~`city`/`region` sütunları~~ — 2026-09-02'de düşürüldü (tablo boştu, veri kaybı yok).
 - ~~HTTPS sertifikası~~ — GitHub Pages `hazefix.org` için sertifika üretmemişti, sunulan sertifika `CN=*.github.io` olduğu için mobilde "site güvenli değil" uyarısı çıkıyordu. Özel alan adı Settings → Pages'ten kaldırılıp yeniden eklenerek üretim tetiklendi. Sertifika `hazefix.org` + `www.hazefix.org` kapsıyor, 2026-12-01'e kadar geçerli. **Kalan tek adım: "Enforce HTTPS" kutusunun işaretlenmesi.**
