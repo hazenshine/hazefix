@@ -8,21 +8,80 @@
      <link rel="icon" type="image/svg+xml" href="favicon.svg"> -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- Fredoka yalnızca başlıklarda ve yalnızca 500'de kullanılıyor, bold ağırlıkları
+     bilinçli olarak yüklenmiyor: karşı boşlukları 500 üstünde kapanıp metni
+     bloğa çeviriyordu. Arayüz metni Nunito Sans — o da yuvarlak, ama metin
+     boyutları için çizildiği için küçük puntoda açık kalıyor. -->
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
+  /* Nötr Antrasit — varsayılan tema. Nötrler bakıra doğru hafif sıcak
+     tutuldu ki aksan rengi yabancı durmasın. Her renk token olmak zorunda:
+     tek bir sabit hex kalırsa açık temada o eleman ters düşer. */
   :root {
-    --bg: #0d1811;
-    --panel: #142a1e;
-    --panel-border: #23402d;
-    --text-main: #eef2ee;
-    --text-muted: #96ac9f;
+    --bg: #141311;
+    --panel: #1d1b18;
+    --panel-border: #2f2b26;
+    --field-bg: #161513;
+    --text-main: #edeae5;
+    --text-muted: #a09a91;
     --copper: #c6824f;
     --copper-dim: #8a5c37;
+    --copper-bright: #d4915c;
+    --copper-wash: rgba(198, 130, 79, 0.15);
+    --on-copper: #14100b;
+    --star-empty: #3a352e;
+    --overlay: rgba(8, 7, 6, 0.55);
+    --glow: rgba(198, 130, 79, 0.05);
     --signal: #7fd8a0;
     --danger: #e2685a;
-    --font-body: "Fredoka", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    --font-body: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
     --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
     --font-heading: "Fredoka", var(--font-body);
+  }
+
+  /* Açık tema. Varsayılan koyu olduğu için media query LIGHT'ı hedefliyor.
+     :not([data-theme="dark"]) koruması, tema düğmesiyle koyuyu seçen bir
+     ziyaretçinin işletim sistemi açık temadayken de koyuda kalmasını
+     sağlıyor. Düğme kök elemana data-theme="light" / "dark" basıyor. */
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #eaeeeb;
+      --panel: #fbfcfb;
+      --panel-border: #cfd8d2;
+      --field-bg: #f2f4f2;
+      --text-main: #16211a;
+      --text-muted: #5d6b62;
+      --copper: #9d5a29;
+      --copper-dim: #b98352;
+      --copper-bright: #85471d;
+      --copper-wash: rgba(157, 90, 41, 0.12);
+      --on-copper: #ffffff;
+      --star-empty: #ccd3cd;
+      --overlay: rgba(20, 30, 24, 0.4);
+      --glow: rgba(157, 90, 41, 0.05);
+      --signal: #226b45;
+      --danger: #b8402f;
+    }
+  }
+
+  /* Düğmeyle açık tema seçilirse işletim sistemi koyuda olsa bile kazanır. */
+  :root[data-theme="light"] {
+    --bg: #eaeeeb;
+    --panel: #fbfcfb;
+    --panel-border: #cfd8d2;
+    --field-bg: #f2f4f2;
+    --text-main: #16211a;
+    --text-muted: #5d6b62;
+    --copper: #9d5a29;
+    --copper-dim: #b98352;
+    --copper-bright: #85471d;
+    --copper-wash: rgba(157, 90, 41, 0.12);
+    --on-copper: #ffffff;
+    --star-empty: #ccd3cd;
+    --overlay: rgba(20, 30, 24, 0.4);
+    --glow: rgba(157, 90, 41, 0.05);
+    --signal: #226b45;
+    --danger: #b8402f;
   }
 
   * { box-sizing: border-box; }
@@ -35,7 +94,7 @@
     justify-content: center;
     padding: 32px 20px;
     background:
-      radial-gradient(circle at 15% 10%, rgba(198,130,79,0.05), transparent 40%),
+      radial-gradient(circle at 15% 10%, var(--glow), transparent 40%),
       var(--bg);
     font-family: var(--font-body);
     color: var(--text-main);
@@ -48,6 +107,88 @@
     border: 1px solid var(--panel-border);
     border-radius: 10px;
     padding: 40px 36px;
+  }
+
+  header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* Tema anahtarı. Referanstaki hap biçimi yerine dikdörtgen: oran 2:1,
+     köşeler yalnızca hafifçe yuvarlatıldı (sipsivri değil, hap da değil). */
+  .theme-switch {
+    flex: none;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    line-height: 0;
+    border-radius: 8px;
+    outline: none;
+  }
+
+  .switch-track {
+    display: block;
+    position: relative;
+    width: 56px;
+    height: 28px;
+    padding: 3px;
+    border-radius: 7px;
+    border: 1px solid var(--panel-border);
+    background: var(--field-bg);
+    transition: background 180ms ease, border-color 180ms ease;
+  }
+
+  .theme-switch:focus-visible .switch-track {
+    border-color: var(--copper);
+    box-shadow: 0 0 0 2px var(--copper-wash);
+  }
+
+  .switch-knob {
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+    background: var(--text-muted);
+    color: var(--panel);
+    transform: translateX(0);
+    transition: transform 200ms cubic-bezier(0.3, 0.9, 0.4, 1), background 180ms ease, color 180ms ease;
+  }
+
+  /* Koyu tema açık: iz bakırla dolu, tuş sağda. */
+  .theme-switch[aria-checked="true"] .switch-track {
+    background: var(--copper);
+    border-color: var(--copper);
+  }
+
+  .theme-switch[aria-checked="true"] .switch-knob {
+    /* 56 - 2*3 padding - 22 tuş = 28px yol */
+    transform: translateX(28px);
+    background: var(--panel);
+    color: var(--copper);
+  }
+
+  .theme-switch[aria-checked="true"] .icon-moon,
+  .theme-switch[aria-checked="false"] .icon-sun {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .switch-knob, .switch-track { transition: none; }
   }
 
   header h1 {
@@ -85,6 +226,9 @@
     font-size: 14px;
     font-weight: 600;
     margin-bottom: 8px;
+    /* Yorum rozeti uzun ("gerekli / en az 15 karakter"); çok dar ekranda
+       taşmak yerine alt satıra insin. */
+    flex-wrap: wrap;
   }
 
   .refdes {
@@ -115,7 +259,7 @@
     font-size: 15px;
     font-family: inherit;
     color: var(--text-main);
-    background: #0f1f16;
+    background: var(--field-bg);
     border: 1px solid var(--panel-border);
     border-radius: 6px;
     outline: none;
@@ -150,7 +294,7 @@
     border: 1px dashed var(--panel-border);
     border-radius: 6px;
     padding: 12px 14px;
-    background: #0f1f16;
+    background: var(--field-bg);
   }
 
   .select-wrap {
@@ -166,7 +310,7 @@
     font-size: 15px;
     font-family: inherit;
     color: var(--text-main);
-    background: #0f1f16;
+    background: var(--field-bg);
     border: 1px solid var(--panel-border);
     border-radius: 6px;
     cursor: pointer;
@@ -227,7 +371,7 @@
 
   .select-options li:hover,
   .select-options li.active {
-    background: rgba(198, 130, 79, 0.15);
+    background: var(--copper-wash);
     color: var(--signal);
   }
 
@@ -260,7 +404,7 @@
     display: inline-block;
     font-size: 26px;
     line-height: 1;
-    color: #2c4636;
+    color: var(--star-empty);
     cursor: pointer;
     margin: 0;
     user-select: none;
@@ -287,10 +431,11 @@
   .submit-btn {
     width: 100%;
     background: var(--copper);
-    color: #14100b;
+    color: var(--on-copper);
     padding: 13px 20px;
     font-size: 15px;
-    font-weight: 650;
+    font-weight: 700;
+    letter-spacing: 0.01em;
     font-family: inherit;
     border: none;
     border-radius: 6px;
@@ -298,7 +443,7 @@
     transition: background 0.15s, opacity 0.15s, transform 0.1s ease;
   }
 
-  .submit-btn:hover { background: #d4915c; }
+  .submit-btn:hover { background: var(--copper-bright); }
   .submit-btn:active { transform: scale(0.96); }
   .submit-btn:disabled { opacity: 0.55; cursor: not-allowed; }
 
@@ -337,7 +482,7 @@
   .modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(4, 10, 6, 0.55);
+    background: var(--overlay);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
     display: flex;
@@ -380,27 +525,72 @@
 
   .modal-ok-btn {
     background: var(--copper);
-    color: #14100b;
+    color: var(--on-copper);
     border: none;
     border-radius: 6px;
     padding: 10px 30px;
     font-size: 14px;
-    font-weight: 650;
+    font-weight: 700;
+    letter-spacing: 0.01em;
     font-family: inherit;
     cursor: pointer;
     transition: background 0.15s, transform 0.1s ease;
   }
 
-  .modal-ok-btn:hover { background: #d4915c; }
+  .modal-ok-btn:hover { background: var(--copper-bright); }
   .modal-ok-btn:active { transform: scale(0.96); }
 </style>
+
+<!-- Kayıtlı tema tercihi, sayfa BOYANMADAN önce uygulanmalı. Bu blok <body>'nin
+     sonundaki script'e taşınırsa ziyaretçi bir kare yanlış temayı görür ve sayfa
+     zıplar (FOUC). Tercih yoksa hiçbir şey basılmaz; o zaman CSS'teki
+     prefers-color-scheme devreye girer, varsayılan koyudur.
+     localStorage gizli sekmede / çerezler engelliyken throw edebilir. -->
+<script>
+  try {
+    var kayitli = localStorage.getItem("hazefix-theme");
+    if (kayitli === "light" || kayitli === "dark") {
+      document.documentElement.dataset.theme = kayitli;
+    }
+  } catch (e) {}
+</script>
 </head>
 <body>
 
 <main class="panel" id="panel">
   <header>
-    <h1>Yorum Bırak</h1>
-    <p class="lede">Proje ya da tamir ile ilgili düşündüklerinizi anlatınız. Her yorum yayınlanmadan önce kontrol aşamasından geçecek.</p>
+    <div class="head-text">
+      <h1>Yorum Bırak</h1>
+      <p class="lede">Proje ya da tamir ile ilgili düşündüklerinizi anlatınız. Her yorum yayınlanmadan önce kontrol aşamasından geçecek.</p>
+    </div>
+
+    <!-- aria-checked="true" = koyu tema açık. Simge eylemi gösteriyor:
+         koyudayken güneş ("aydınlığa geç"), aydınlıktayken ay. -->
+    <button type="button" id="themeToggle" class="theme-switch" role="switch" aria-checked="true">
+      <span class="switch-track">
+        <span class="switch-knob">
+          <svg class="icon-sun" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4.2"></circle>
+            <path d="M12 1.8v2.4M12 19.8v2.4M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M1.8 12h2.4M19.8 12h2.4M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7"></path>
+          </svg>
+          <!-- Bu hilal YATAY EKSENE SİMETRİK, ve bu bilinçli bir karar.
+               Klasik eğik hilalde (Feather/Lucide tipi) oyuk sağ-üstte kalıyor;
+               kütle sol-alta yığıldığı için sınırlayıcı kutuya göre ortalayınca
+               göz ikonu aşağıda, kütleye göre ortalayınca yukarıda görüyor.
+               İkisinin ortası da dengeyi kurmadı — sorun konumda değil şekilde.
+               Burada dış çember (12,12) r=9 ve ısırık çemberi (16,12) r=7.5
+               aynı yatay eksende, dolayısıyla DİKEY hata matematiksel olarak
+               sıfır: ölçümde kutu merkezi 11.98, kütle merkezi 11.97.
+               Geriye yalnızca yatay fark kalıyor (kutu 10.00, kütle 8.83);
+               aşağıdaki kayma onu ortadan bölüyor.
+               Eğik bir hilale dönersen bu garanti kaybolur. -->
+          <svg class="icon-moon" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+            <path transform="translate(2.59 0)" d="M17.09 4.58A9 9 0 1 0 17.09 19.42A7.5 7.5 0 0 1 17.09 4.58Z"></path>
+          </svg>
+        </span>
+      </span>
+      <span class="sr-only" id="themeToggleText">Koyu tema açık</span>
+    </button>
   </header>
 
   <form id="reviewForm" novalidate autocomplete="off">
@@ -468,7 +658,7 @@
     </div>
 
     <div class="field">
-      <label for="reviewText"><span class="field-name"><span class="refdes"></span>Yorum</span> <span class="req" id="reviewReq">(gerekli)</span></label>
+      <label for="reviewText"><span class="field-name"><span class="refdes"></span>Yorum</span> <span class="req" id="reviewReq">(gerekli / en az 15 karakter)</span></label>
       <textarea id="reviewText" name="review" required maxlength="2000"></textarea>
     </div>
 
@@ -497,6 +687,14 @@
   const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
   const RATING_LABELS = { 1: "Berbat", 2: "Kötü", 3: "Orta", 4: "İyi", 5: "Mükemmel" };
 
+  // Hem (gerekli) rozetinin görünürlüğünü hem de gönderim doğrulamasını bu iki
+  // sayı belirliyor. Tek yerde durmaları şart: ayrı yazılırlarsa rozet "eksik"
+  // derken form gönderilebilir hale gelir (2026-09-02'ye kadar tam olarak bu
+  // oluyordu). Yorum eşiği "iyi" gibi tek kelimelik girişleri elemek için
+  // bilinçli olarak yüksek.
+  const NAME_MIN = 3;
+  const REVIEW_MIN = 15;
+
   const form = document.getElementById("reviewForm");
   form.reset();
 
@@ -515,6 +713,61 @@
   function toggleReq(badge, show) {
     badge.classList.toggle("req-hidden", !show);
   }
+
+  // --- Tema anahtarı ---
+  // Renkler tamamen CSS token'larından geliyor; buranın tek işi kök elemana
+  // data-theme basmak ve tercihi saklamak. <head>'deki küçük script aynı
+  // tercihi sayfa boyanmadan önce uyguluyor.
+  const THEME_KEY = "hazefix-theme";
+  const themeToggle = document.getElementById("themeToggle");
+  const themeToggleText = document.getElementById("themeToggleText");
+  const lightQuery = window.matchMedia("(prefers-color-scheme: light)");
+
+  // Varsayılan koyu. Açık tema yalnızca açıkça seçilmişse ya da seçim yokken
+  // işletim sistemi açık temadaysa geçerli.
+  function aktifTema() {
+    const secili = document.documentElement.dataset.theme;
+    if (secili === "light" || secili === "dark") return secili;
+    return lightQuery.matches ? "light" : "dark";
+  }
+
+  function temayiYansit(tema) {
+    const koyu = tema === "dark";
+    themeToggle.setAttribute("aria-checked", String(koyu));
+    themeToggleText.textContent = koyu ? "Koyu tema açık" : "Açık tema açık";
+  }
+
+  temayiYansit(aktifTema());
+
+  themeToggle.addEventListener("click", () => {
+    const yeni = aktifTema() === "dark" ? "light" : "dark";
+    document.documentElement.dataset.theme = yeni;
+    try {
+      localStorage.setItem(THEME_KEY, yeni);
+    } catch (e) {
+      // Gizli sekmede / çerezler engelliyken yazamayız; tema yine de değişir,
+      // sadece bir sonraki ziyarette hatırlanmaz.
+    }
+    temayiYansit(yeni);
+  });
+
+  // Ziyaretçi henüz elle seçim yapmadıysa işletim sistemi değişimini takip et.
+  lightQuery.addEventListener("change", () => {
+    if (!document.documentElement.dataset.theme) temayiYansit(aktifTema());
+  });
+
+  // Alan etiketleri tıklanınca alanı odaklamıyor. <label for="..."> normalde
+  // tıklamayı kendi kontrolüne yönlendirir; burada bu istenmiyor, çünkü
+  // etikete ya da (gerekli) rozetine değen her tıklama metin kutusunu açıyor,
+  // Fotoğraf'ta ise dosya seçiciyi başlatıyordu.
+  // Yıldızlar hariç tutuldu: onlar da <label for> ama tıklamayla puan seçmek
+  // tam olarak istenen davranış.
+  // for= nitelikleri duruyor, yani ekran okuyucu için etiket-alan bağı bozulmadı;
+  // değişen yalnızca tıklama davranışı.
+  form.addEventListener("click", (e) => {
+    const label = e.target.closest("label");
+    if (label && !label.closest(".stars")) e.preventDefault();
+  });
 
   // "Verilen Hizmet" and "Cihaz Modeli" are the same custom listbox, so the
   // behaviour lives here once. Elements are looked up from `prefix`:
@@ -647,11 +900,11 @@
   });
 
   form.firstName.addEventListener("input", () => {
-    toggleReq(nameReq, form.firstName.value.trim().length < 3);
+    toggleReq(nameReq, form.firstName.value.trim().length < NAME_MIN);
   });
 
   form.reviewText.addEventListener("input", () => {
-    toggleReq(reviewReq, form.reviewText.value.trim().length < 15);
+    toggleReq(reviewReq, form.reviewText.value.trim().length < REVIEW_MIN);
   });
 
   function pulseReadout(text) {
@@ -707,8 +960,8 @@
   // Browsers can restore typed values / checked radios on page reload
   // without firing input/change events, so sync the badges once on load.
   const restoredRating = form.querySelector('input[name="rating"]:checked');
-  toggleReq(nameReq, form.firstName.value.trim().length < 3);
-  toggleReq(reviewReq, form.reviewText.value.trim().length < 15);
+  toggleReq(nameReq, form.firstName.value.trim().length < NAME_MIN);
+  toggleReq(reviewReq, form.reviewText.value.trim().length < REVIEW_MIN);
   toggleReq(ratingReq, !restoredRating);
   if (restoredRating) {
     ratingReadout.textContent = `${restoredRating.value}/5 — ${RATING_LABELS[restoredRating.value]}`;
@@ -724,14 +977,25 @@
   const modalOkBtn = document.getElementById("modalOkBtn");
   const modalMsg = document.getElementById("modalMsg");
 
-  // Field names are bolded and must read exactly like the labels above them.
-  function showValidationModal(includeDevice) {
-    const fields = ["İsim", "Verilen Hizmet"];
-    if (includeDevice) fields.push("Cihaz Modeli");
-    fields.push("Puan", "Yorum");
-    const bold = fields.map((name) => `<strong>${name}</strong>`);
-    const last = bold.pop();
-    modalMsg.innerHTML = `${bold.join(", ")} ve ${last} alanlarını doldurunuz.`;
+  // Yalnızca gerçekten eksik olan alanlar sayılıyor; hepsini listelemek,
+  // doldurulmuş alanları da eksikmiş gibi gösteriyordu.
+  // Alan adları kalın ve yukarıdaki etiketlerle birebir aynı yazılmalı.
+  // Türkçe ek tekil/çoğul olarak değişiyor: tek eksikte "alanını",
+  // birden fazlada "alanlarını".
+  // "A, B ve C" — Türkçe liste grameri. Tek elemanda bağlaç yok.
+  function birlestir(parcalar) {
+    const kopya = parcalar.slice();
+    const son = kopya.pop();
+    return kopya.length ? `${kopya.join(", ")} ve ${son}` : son;
+  }
+
+  // Tek cümle. Karakter eşiği bilgisi etiketteki "(en az N karakter yazınız)"
+  // rozetinde durduğu için modalda tekrarlanmıyor — eşiğin altında kalan alan
+  // da burada sadece "doldurulmamış" sayılıyor.
+  function showValidationModal(missing) {
+    const list = birlestir(missing.map((name) => `<strong>${name}</strong>`));
+    const suffix = missing.length === 1 ? "alanını" : "alanlarını";
+    modalMsg.innerHTML = `${list} ${suffix} doldurunuz.`;
     validationModal.classList.add("open");
   }
 
@@ -769,8 +1033,18 @@
     const reviewText = form.reviewText.value.trim();
     const file = fileInput.files[0];
 
-    if (!firstName || !service || !ratingInput || !reviewText || (needsDeviceModel && !deviceModel)) {
-      showValidationModal(needsDeviceModel);
+    // Sıra formdaki alan sırasıyla aynı tutuluyor ki kullanıcı yukarıdan
+    // aşağıya okurken karşılığını bulsun. Eşikler rozetlerle aynı sabitlerden
+    // geliyor: rozet "(gerekli)" diyorsa gönderim de gerçekten engelleniyor.
+    const missing = [];
+    if (firstName.length < NAME_MIN) missing.push("İsim");
+    if (!service) missing.push("Verilen Hizmet");
+    if (needsDeviceModel && !deviceModel) missing.push("Cihaz Modeli");
+    if (!ratingInput) missing.push("Puan");
+    if (reviewText.length < REVIEW_MIN) missing.push("Yorum");
+
+    if (missing.length) {
+      showValidationModal(missing);
       return;
     }
 
@@ -822,6 +1096,10 @@
     }
   });
 
+  // Onay ekranında tema anahtarı bilinçli olarak YOK: panelin tamamı
+  // değiştiği için anahtar da gider. Kullanıcı kararı — geri istenirse
+  // düğümü innerHTML ile yeniden yazmak yerine taşımak gerekir, yoksa
+  // üzerindeki click dinleyicisi kaybolur.
   function showConfirmation() {
     panel.innerHTML = `
       <div class="confirm">
