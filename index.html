@@ -68,6 +68,16 @@
 
   .field { margin-bottom: 24px; }
 
+  .field-hidden { display: none; }
+
+  /* Entrance only. The options list is absolutely positioned, so animating
+     a height collapse here would clip the dropdown while it is open. */
+  @keyframes fieldIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: none; }
+  }
+  .field-reveal { animation: fieldIn 180ms ease; }
+
   label {
     display: flex;
     align-items: center;
@@ -169,7 +179,7 @@
     border-color: var(--copper);
   }
 
-  #serviceValue.placeholder {
+  .select-trigger .placeholder {
     color: var(--text-muted);
   }
 
@@ -421,6 +431,22 @@
       <input type="hidden" id="serviceInput" name="service">
     </div>
 
+    <div class="field field-hidden" id="deviceField">
+      <label id="deviceLabel"><span class="field-name"><span class="refdes"></span>Cihaz Modeli</span> <span class="req" id="deviceReq">(gerekli)</span></label>
+      <div class="select-wrap" id="deviceSelect">
+        <button type="button" class="select-trigger" id="deviceTrigger" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="deviceLabel">
+          <span id="deviceValue" class="placeholder">Seçiniz</span>
+          <span class="select-arrow">▾</span>
+        </button>
+        <ul class="select-options" id="deviceOptions" role="listbox">
+          <li role="option" id="device-opt-0" data-value="Switch v1/v2">Switch v1/v2</li>
+          <li role="option" id="device-opt-1" data-value="Switch Lite">Switch Lite</li>
+          <li role="option" id="device-opt-2" data-value="Switch OLED">Switch OLED</li>
+        </ul>
+      </div>
+      <input type="hidden" id="deviceInput" name="deviceModel">
+    </div>
+
     <div class="field">
       <label for="imageUpload"><span class="field-name"><span class="refdes"></span>Fotoğraf</span> <span class="opt">(opsiyonel)</span></label>
       <div class="dropzone">
@@ -483,104 +509,140 @@
   const ratingReq = document.getElementById("ratingReq");
   const reviewReq = document.getElementById("reviewReq");
   const serviceReq = document.getElementById("serviceReq");
-  const serviceTrigger = document.getElementById("serviceTrigger");
-  const serviceOptions = document.getElementById("serviceOptions");
-  const serviceValue = document.getElementById("serviceValue");
-  const serviceInput = document.getElementById("serviceInput");
-  const serviceOptionEls = Array.from(serviceOptions.querySelectorAll("li"));
+  const deviceReq = document.getElementById("deviceReq");
+  const deviceField = document.getElementById("deviceField");
 
   function toggleReq(badge, show) {
     badge.classList.toggle("req-hidden", !show);
   }
 
-  let serviceActiveIndex = -1;
+  // "Verilen Hizmet" and "Cihaz Modeli" are the same custom listbox, so the
+  // behaviour lives here once. Elements are looked up from `prefix`:
+  // "service" -> #serviceSelect / #serviceTrigger / #serviceOptions /
+  // #serviceValue / #serviceInput.
+  function createSelect(prefix, reqBadge, onSelect) {
+    const wrap = document.getElementById(prefix + "Select");
+    const trigger = document.getElementById(prefix + "Trigger");
+    const list = document.getElementById(prefix + "Options");
+    const valueEl = document.getElementById(prefix + "Value");
+    const input = document.getElementById(prefix + "Input");
+    const optionEls = Array.from(list.querySelectorAll("li"));
+    const placeholderText = valueEl.textContent;
+    let activeIndex = -1;
 
-  function highlightServiceOption(index) {
-    serviceActiveIndex = index;
-    serviceOptionEls.forEach((li, i) => {
-      li.classList.toggle("active", i === index);
+    function highlight(index) {
+      activeIndex = index;
+      optionEls.forEach((li, i) => {
+        li.classList.toggle("active", i === index);
+      });
+      if (index >= 0) {
+        trigger.setAttribute("aria-activedescendant", optionEls[index].id);
+      } else {
+        trigger.removeAttribute("aria-activedescendant");
+      }
+    }
+
+    function open() {
+      list.classList.add("open");
+      trigger.classList.add("open");
+      trigger.setAttribute("aria-expanded", "true");
+      const currentIndex = optionEls.findIndex((li) => li.dataset.value === input.value);
+      highlight(currentIndex >= 0 ? currentIndex : 0);
+    }
+
+    function close() {
+      list.classList.remove("open");
+      trigger.classList.remove("open");
+      trigger.setAttribute("aria-expanded", "false");
+      highlight(-1);
+    }
+
+    function select(index) {
+      const li = optionEls[index];
+      if (!li) return;
+      valueEl.textContent = li.dataset.value;
+      valueEl.classList.remove("placeholder");
+      input.value = li.dataset.value;
+      toggleReq(reqBadge, false);
+      close();
+      if (onSelect) onSelect(li.dataset.value);
+    }
+
+    function clear() {
+      valueEl.textContent = placeholderText;
+      valueEl.classList.add("placeholder");
+      input.value = "";
+      toggleReq(reqBadge, true);
+      close();
+    }
+
+    trigger.addEventListener("click", () => {
+      if (list.classList.contains("open")) {
+        close();
+      } else {
+        open();
+      }
     });
-    if (index >= 0) {
-      serviceTrigger.setAttribute("aria-activedescendant", serviceOptionEls[index].id);
-    } else {
-      serviceTrigger.removeAttribute("aria-activedescendant");
-    }
-  }
 
-  function openServiceSelect() {
-    serviceOptions.classList.add("open");
-    serviceTrigger.classList.add("open");
-    serviceTrigger.setAttribute("aria-expanded", "true");
-    const currentIndex = serviceOptionEls.findIndex((li) => li.dataset.value === serviceInput.value);
-    highlightServiceOption(currentIndex >= 0 ? currentIndex : 0);
-  }
-
-  function closeServiceSelect() {
-    serviceOptions.classList.remove("open");
-    serviceTrigger.classList.remove("open");
-    serviceTrigger.setAttribute("aria-expanded", "false");
-    highlightServiceOption(-1);
-  }
-
-  function selectServiceOption(index) {
-    const li = serviceOptionEls[index];
-    if (!li) return;
-    serviceValue.textContent = li.dataset.value;
-    serviceValue.classList.remove("placeholder");
-    serviceInput.value = li.dataset.value;
-    toggleReq(serviceReq, false);
-    closeServiceSelect();
-  }
-
-  serviceTrigger.addEventListener("click", () => {
-    if (serviceOptions.classList.contains("open")) {
-      closeServiceSelect();
-    } else {
-      openServiceSelect();
-    }
-  });
-
-  serviceTrigger.addEventListener("keydown", (e) => {
-    const isOpen = serviceOptions.classList.contains("open");
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      if (!isOpen) {
-        openServiceSelect();
-      } else {
-        highlightServiceOption(Math.min(serviceActiveIndex + 1, serviceOptionEls.length - 1));
+    trigger.addEventListener("keydown", (e) => {
+      const isOpen = list.classList.contains("open");
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        if (!isOpen) {
+          open();
+        } else {
+          highlight(Math.min(activeIndex + 1, optionEls.length - 1));
+        }
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        if (!isOpen) {
+          open();
+        } else {
+          highlight(Math.max(activeIndex - 1, 0));
+        }
+      } else if ((e.key === "Enter" || e.key === " ") && isOpen) {
+        e.preventDefault();
+        select(activeIndex);
       }
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      if (!isOpen) {
-        openServiceSelect();
-      } else {
-        highlightServiceOption(Math.max(serviceActiveIndex - 1, 0));
-      }
-    } else if ((e.key === "Enter" || e.key === " ") && isOpen) {
-      e.preventDefault();
-      selectServiceOption(serviceActiveIndex);
-    }
-  });
+    });
 
-  // Mousedown on an option would blur the trigger, and the focusout handler
-  // below closes the list (pointer-events: none) before the click can land.
-  // Suppressing the default keeps focus on the trigger so the click fires.
-  serviceOptions.addEventListener("mousedown", (e) => e.preventDefault());
+    // Mousedown on an option would blur the trigger, and the focusout handler
+    // below closes the list (pointer-events: none) before the click can land.
+    // Suppressing the default keeps focus on the trigger so the click fires.
+    list.addEventListener("mousedown", (e) => e.preventDefault());
 
-  serviceOptionEls.forEach((li, index) => {
-    li.addEventListener("click", () => selectServiceOption(index));
-    li.addEventListener("mouseenter", () => highlightServiceOption(index));
-  });
+    optionEls.forEach((li, index) => {
+      li.addEventListener("click", () => select(index));
+      li.addEventListener("mouseenter", () => highlight(index));
+    });
 
-  document.addEventListener("click", (e) => {
-    if (!document.getElementById("serviceSelect").contains(e.target)) {
-      closeServiceSelect();
-    }
-  });
+    document.addEventListener("click", (e) => {
+      if (!wrap.contains(e.target)) close();
+    });
 
-  document.getElementById("serviceSelect").addEventListener("focusout", (e) => {
-    if (!document.getElementById("serviceSelect").contains(e.relatedTarget)) {
-      closeServiceSelect();
+    wrap.addEventListener("focusout", (e) => {
+      if (!wrap.contains(e.relatedTarget)) close();
+    });
+
+    return {
+      close,
+      clear,
+      get value() { return input.value; },
+    };
+  }
+
+  // The only service that needs a device model.
+  const CHIP_SERVICE = "Nintendo Switch - Çipleme";
+
+  const deviceSelect = createSelect("device", deviceReq);
+  const serviceSelect = createSelect("service", serviceReq, (value) => {
+    if (value === CHIP_SERVICE) {
+      deviceField.classList.remove("field-hidden", "field-reveal");
+      void deviceField.offsetWidth; // restart the entrance animation
+      deviceField.classList.add("field-reveal");
+    } else {
+      deviceField.classList.add("field-hidden");
+      deviceSelect.clear();
     }
   });
 
@@ -660,8 +722,16 @@
 
   const validationModal = document.getElementById("validationModal");
   const modalOkBtn = document.getElementById("modalOkBtn");
+  const modalMsg = document.getElementById("modalMsg");
 
-  function showValidationModal() {
+  // Field names are bolded and must read exactly like the labels above them.
+  function showValidationModal(includeDevice) {
+    const fields = ["İsim", "Verilen Hizmet"];
+    if (includeDevice) fields.push("Cihaz Modeli");
+    fields.push("Puan", "Yorum");
+    const bold = fields.map((name) => `<strong>${name}</strong>`);
+    const last = bold.pop();
+    modalMsg.innerHTML = `${bold.join(", ")} ve ${last} alanlarını doldurunuz.`;
     validationModal.classList.add("open");
   }
 
@@ -676,7 +746,8 @@
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       hideValidationModal();
-      closeServiceSelect();
+      serviceSelect.close();
+      deviceSelect.close();
     }
   });
 
@@ -691,13 +762,15 @@
     }
 
     const firstName = form.firstName.value.trim();
-    const service = serviceInput.value;
+    const service = serviceSelect.value;
+    const needsDeviceModel = service === CHIP_SERVICE;
+    const deviceModel = deviceSelect.value;
     const ratingInput = form.querySelector('input[name="rating"]:checked');
     const reviewText = form.reviewText.value.trim();
     const file = fileInput.files[0];
 
-    if (!firstName || !service || !ratingInput || !reviewText) {
-      showValidationModal();
+    if (!firstName || !service || !ratingInput || !reviewText || (needsDeviceModel && !deviceModel)) {
+      showValidationModal(needsDeviceModel);
       return;
     }
 
@@ -733,6 +806,7 @@
       const { error: insertError } = await supabaseClient.from("reviews").insert({
         "İsim": firstName,
         "Hizmet": service,
+        "Cihaz Modeli": needsDeviceModel ? deviceModel : null,
         "Puan": Number(ratingInput.value),
         "Yorum": reviewText,
         "Görsel Konumu": imagePath,

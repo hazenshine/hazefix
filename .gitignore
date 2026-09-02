@@ -9,6 +9,7 @@ review-form.html
 .claude/settings.local.json
 .env
 *.local
+*.local.html
 .DS_Store
 supabase/.temp/
 supabase/.branches/
