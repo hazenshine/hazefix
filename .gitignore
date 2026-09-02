@@ -1,7 +1,14 @@
+# Yerel çalışma dosyaları — public repoda YAYINLANMAZ.
+# Diskte dururlar, hazefix projesinin parçasıdırlar; sadece GitHub'a gitmezler.
+CLAUDE.md
+supabase-schema.sql
+migration-turkce-sutunlar.sql
+review-form.html
+
+# Gizli / makineye özel
 .claude/settings.local.json
 .env
 *.local
 .DS_Store
 supabase/.temp/
 supabase/.branches/
-review-form.html
