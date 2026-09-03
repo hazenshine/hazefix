@@ -4,8 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Yorum bırak — HazeFix</title>
-<!-- favicon.svg kayıp (repoda ve diskte yok). Logo bulununca şu satır geri eklenecek:
-     <link rel="icon" type="image/svg+xml" href="favicon.svg"> -->
+<!-- Yol KÖKTEN başlıyor (/favicon.svg), göreli DEĞİL: bu dosya /review/ altında
+     durduğu için "favicon.svg" yazılsaydı tarayıcı /review/favicon.svg arar ve 404 alırdı.
+     Tek dosya kökte durur, bütün sayfalar aynı ikonu kullanır. -->
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- Fredoka yalnızca başlıklarda ve yalnızca 500'de kullanılıyor, bold ağırlıkları
@@ -101,20 +103,15 @@
     gap: 20px;
   }
 
+  /* Alt boşluk 32px, 8px değil: açıklama paragrafı silinince başlığın altındaki
+     aralığı o taşıyordu (h1 8px + lede 32px). Paragrafın kuralı da onunla
+     birlikte kaldırıldı, kullanan kalmamıştı. */
   header h1 {
     font-family: var(--font-heading);
     font-size: 26px;
     font-weight: 500;
     letter-spacing: -0.01em;
-    margin: 0 0 8px;
-  }
-
-  header p.lede {
-    font-size: 14.5px;
-    color: var(--text-muted);
     margin: 0 0 32px;
-    max-width: 46ch;
-    line-height: 1.5;
   }
 
   .field { margin-bottom: 24px; }
@@ -461,7 +458,6 @@
   <header>
     <div class="head-text">
       <h1>Yorum Bırak</h1>
-      <p class="lede">Proje ya da tamir ile ilgili düşündüklerinizi anlatınız. Her yorum yayınlanmadan önce kontrol aşamasından geçecek.</p>
     </div>
 
   </header>
@@ -981,7 +977,7 @@
   function showConfirmation() {
     panel.innerHTML = `
       <div class="confirm">
-        <h2>Yorum Alındı! ⭐️</h2>
+        <h2>Yorum Alındı!</h2>
         <p>Yorumunuz sırada bekliyor, kontrol edildikten sonra sitede görünecek.</p>
       </div>
     `;
