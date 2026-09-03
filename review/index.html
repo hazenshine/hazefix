@@ -22,7 +22,7 @@
     --panel: #1d1b18;
     --panel-border: #2f2b26;
     --panel-edge: #2f2b26;
-    --panel-shadow: 0 18px 40px rgba(8, 7, 6, 0.55);
+    --panel-shadow: 0 0 14px rgba(0, 0, 0, 0.55);
     --field-bg: #161513;
     --text-main: #edeae5;
     --text-muted: #a09a91;
@@ -52,7 +52,7 @@
       --panel: #e3d0b3;
       --panel-border: #c9b492;
       --panel-edge: transparent;
-      --panel-shadow: 18px 18px 36px #baab93, -10px -10px 20px #e8d8c1;
+      --panel-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
       --field-bg: #dbc7a6;
       --text-main: #241d12;
       --text-muted: #4e4436;
@@ -76,7 +76,7 @@
     --panel: #e3d0b3;
     --panel-border: #c9b492;
     --panel-edge: transparent;
-    --panel-shadow: 18px 18px 36px #baab93, -10px -10px 20px #e8d8c1;
+    --panel-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
     --field-bg: #dbc7a6;
     --text-main: #241d12;
     --text-muted: #4e4436;
@@ -115,10 +115,17 @@
                       bir çerçeve "aynı renkten yükselen katman" hissini
                       bozardı. Koyu temada çizgi duruyor. Alan/modal
                       kenarlıkları --panel-border'da kaldı, o ayrı.
-       --panel-shadow gölgenin tamamı. Her tema kendi derinlik kurgusunu
-                      tanımlıyor: koyuda tek yönlü düşen gölge, bej temada
-                      çift gölge (sağ-alt koyu #baab93, sol-üst açık #f2eadd)
-                      — ışık sol üstten geliyormuş gibi.
+       --panel-shadow gölgenin tamamı, her tema kendi değerini veriyor.
+
+     GÖLGE HER YANA EŞİT OLMALI: kaydırma sıfır (0 0), yayılım dar, renk tek
+     ve nötr. Önce neumorfik çift gölge denendi (sağ-altta koyu, sol-üstte
+     açık, ışık sol üstten geliyormuş gibi) — kullanıcı reddetti: çapraz
+     yönlü olduğu için panel "eşit kenarlı ve sade" durmuyordu, sol-üstteki
+     aydınlık taraf da zemini beyazlatıyor gibi okunuyordu.
+     Referans olarak nanofix.ca/review ölçüldü: 0 0 10px rgba(0,0,0,0.3),
+     yarıçap 15px, kenarlık yok. Değerler oradan alındı.
+     Kaydırmalı ya da çift renkli bir gölgeye dönersen aynı itiraz geri gelir.
+
      Gölgeyi token yapmanın sebebi §3'teki kural: her renk token olmak zorunda,
      yoksa diğer temada ters düşer ve gözden kaçar. */
   .panel {
@@ -126,7 +133,7 @@
     max-width: 560px;
     background: var(--panel);
     border: 1px solid var(--panel-edge);
-    border-radius: 10px;
+    border-radius: 15px;
     padding: 40px 36px;
     box-shadow: var(--panel-shadow);
   }
