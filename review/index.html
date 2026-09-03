@@ -31,6 +31,7 @@
     --copper-bright: #d4915c;
     --copper-wash: rgba(198, 130, 79, 0.15);
     --on-copper: #14100b;
+    --star-filled: #7fd8a0;
     --star-empty: #3a352e;
     --overlay: rgba(8, 7, 6, 0.55);
     --glow: rgba(198, 130, 79, 0.05);
@@ -51,16 +52,17 @@
       --panel: #e3d0b3;
       --panel-border: #c9b492;
       --panel-edge: transparent;
-      --panel-shadow: 18px 18px 36px #baab93, -18px -18px 36px #f2eadd;
+      --panel-shadow: 18px 18px 36px #baab93, -10px -10px 20px #e8d8c1;
       --field-bg: #dbc7a6;
       --text-main: #241d12;
-      --text-muted: #5f5342;
+      --text-muted: #4e4436;
       --copper: #824b22;
       --copper-dim: #a3703f;
       --copper-bright: #6b3c18;
       --copper-wash: rgba(130, 75, 34, 0.14);
       --on-copper: #f7efe2;
-      --star-empty: #c3ae8b;
+      --star-filled: #07303e;
+      --star-empty: #a39580;
       --overlay: rgba(45, 33, 18, 0.45);
       --glow: rgba(130, 75, 34, 0.06);
       --signal: #206541;
@@ -74,16 +76,17 @@
     --panel: #e3d0b3;
     --panel-border: #c9b492;
     --panel-edge: transparent;
-    --panel-shadow: 18px 18px 36px #baab93, -18px -18px 36px #f2eadd;
+    --panel-shadow: 18px 18px 36px #baab93, -10px -10px 20px #e8d8c1;
     --field-bg: #dbc7a6;
     --text-main: #241d12;
-    --text-muted: #5f5342;
+    --text-muted: #4e4436;
     --copper: #824b22;
     --copper-dim: #a3703f;
     --copper-bright: #6b3c18;
     --copper-wash: rgba(130, 75, 34, 0.14);
     --on-copper: #f7efe2;
-    --star-empty: #c3ae8b;
+    --star-filled: #07303e;
+    --star-empty: #a39580;
     --overlay: rgba(45, 33, 18, 0.45);
     --glow: rgba(130, 75, 34, 0.06);
     --signal: #206541;
@@ -435,10 +438,13 @@
     transform: scale(0.8);
   }
 
+  /* Dolu yıldız kendi token'ında, --signal'de DEĞİL: --signal aynı zamanda
+     başarı mesajının ve dropdown vurgusunun rengi, onların yeşil kalması
+     gerekiyor. Yıldız rengini değiştirmek için burayı değil token'ı düzenle. */
   .stars input:checked ~ label,
   .stars label:hover,
   .stars label:hover ~ label {
-    color: var(--signal);
+    color: var(--star-filled);
   }
 
   .stars input:focus-visible + label {
