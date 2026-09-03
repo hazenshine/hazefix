@@ -64,13 +64,13 @@
     color: var(--text-main);
   }
 
-  /* Bej temada panel ile zemin AYNI renk (#e3d0b3); paneli ayıran tek şey
-     gölge. Bu yüzden iki token gerekti:
-       --panel-edge   panelin kenar çizgisi. Bej temada transparent — görünür
-                      bir çerçeve "aynı renkten yükselen katman" hissini
-                      bozardı. Koyu temada çizgi duruyor. Alan/modal
-                      kenarlıkları --panel-border'da kaldı, o ayrı.
-       --panel-shadow gölgenin tamamı, her tema kendi değerini veriyor.
+  /* Panel ile zemin AYNI renk (--bg ve --panel ikisi de #f9e6ca); paneli
+     ayıran tek şey gölge. Bu yüzden iki token var:
+       --panel-edge   panelin kenar çizgisi, şu an transparent — görünür bir
+                      çerçeve "aynı renkten yükselen katman" hissini bozar.
+                      Alan ve modal kenarlıkları --panel-border'da kaldı,
+                      onlar çizgisiz kalmamalı; ikisi karıştırılmasın.
+       --panel-shadow gölgenin tamamı, renk değil komple box-shadow değeri.
 
      GÖLGE HER YANA EŞİT OLMALI: kaydırma sıfır (0 0), yayılım dar, renk tek
      ve nötr. Önce neumorfik çift gölge denendi (sağ-altta koyu, sol-üstte
@@ -81,8 +81,9 @@
      yarıçap 15px, kenarlık yok. Değerler oradan alındı.
      Kaydırmalı ya da çift renkli bir gölgeye dönersen aynı itiraz geri gelir.
 
-     Gölgeyi token yapmanın sebebi §3'teki kural: her renk token olmak zorunda,
-     yoksa diğer temada ters düşer ve gözden kaçar. */
+     İkisinin token olmasının sebebi §3'teki kural: her renk token olmak
+     zorunda. Şu an tek tema var ama ikinci tema geri geldiğinde bu iki değer
+     temaya göre değişecek — sabit hex yazılırsa o gün gözden kaçar. */
   .panel {
     width: 100%;
     max-width: 560px;
