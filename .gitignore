@@ -2,7 +2,7 @@
 # Diskte dururlar, hazefix projesinin parçasıdırlar; sadece GitHub'a gitmezler.
 CLAUDE.md
 supabase-schema.sql
-migration-turkce-sutunlar.sql
+migration-*.sql
 review-form.html
 
 # Gizli / makineye özel
