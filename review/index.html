@@ -4,8 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Yorum bırak — HazeFix</title>
-<!-- favicon.svg kayıp (repoda ve diskte yok). Logo bulununca şu satır geri eklenecek:
-     <link rel="icon" type="image/svg+xml" href="favicon.svg"> -->
+<!-- Yol KÖKTEN başlıyor (/favicon.svg), göreli DEĞİL: bu dosya /review/ altında
+     durduğu için "favicon.svg" yazılsaydı tarayıcı /review/favicon.svg arar ve 404 alırdı.
+     Tek dosya kökte durur, bütün sayfalar aynı ikonu kullanır. -->
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- Fredoka yalnızca başlıklarda ve yalnızca 500'de kullanılıyor, bold ağırlıkları
