@@ -533,6 +533,20 @@
       <input type="hidden" id="deviceInput" name="deviceModel">
     </div>
 
+    <!-- Cihaz Modeli'nin ikinci hâli: Cihaz Satışı'nda liste değil YAZMALI alan
+         (kullanıcı kararı). İki alan aynı anda asla görünmez ve ikisi de aynı
+         "Cihaz Modeli" veritabanı sütununa yazar; hangisi açıksa onun değeri
+         gönderilir. Ayrı bir sütun AÇILMADI, çünkü ikisi de aynı bilgiyi
+         taşıyor — biri seçilmiş biri yazılmış olması veriyi değiştirmiyor. -->
+    <div class="field field-hidden" id="deviceTextField">
+      <label for="deviceModelText"><span class="field-name"><span class="refdes"></span>Cihaz Modeli</span> <span class="req" id="deviceTextReq">(gerekli)</span></label>
+      <!-- maxlength 80, "İsim" sütunundaki sınırla aynı. Bu alan liste değil
+           serbest yazı olduğu için artık uzunluk sınırı gerekiyor; veritabanı
+           tarafında "Cihaz Modeli" sütununda HENÜZ check constraint YOK
+           (İsim 80, Yorum 2000 ile sınırlı). Kullanıcı onaylarsa eklenecek. -->
+      <input type="text" id="deviceModelText" name="deviceModelText" autocomplete="off" maxlength="80">
+    </div>
+
     <div class="field">
       <label for="imageUpload"><span class="field-name"><span class="refdes"></span>Fotoğraf</span> <span class="opt">(opsiyonel)</span></label>
       <div class="dropzone">
@@ -614,6 +628,10 @@
   // bilinçli olarak yüksek.
   const NAME_MIN = 3;
   const REVIEW_MIN = 15;
+  // Cihaz modeli yazmalı alanında eşik yok, "boş olmasın" yetiyor: model adları
+  // çok kısa olabiliyor ("v2" iki karakter), 3'e çekilirse geçerli girişler
+  // reddedilir.
+  const DEVICE_MIN = 1;
 
   const form = document.getElementById("reviewForm");
   form.reset();
@@ -627,6 +645,9 @@
   const serviceReq = document.getElementById("serviceReq");
   const deviceReq = document.getElementById("deviceReq");
   const deviceField = document.getElementById("deviceField");
+  const deviceTextReq = document.getElementById("deviceTextReq");
+  const deviceTextField = document.getElementById("deviceTextField");
+  const deviceModelText = document.getElementById("deviceModelText");
 
   function toggleReq(badge, show) {
     badge.classList.toggle("req-hidden", !show);
@@ -760,19 +781,42 @@
     };
   }
 
-  // The only service that needs a device model.
+  // Cihaz modeli soran iki hizmet var ve ikisi FARKLI alan istiyor:
+  // Çipleme'de üç seçenekli liste, Cihaz Satışı'nda yazmalı kutu. Başka
+  // hizmetlerde hiç sorulmuyor.
   const CHIP_SERVICE = "Nintendo Switch - Çipleme";
+  const SALE_SERVICE = "Nintendo Switch - Cihaz Satışı";
+
+  function revealField(el) {
+    el.classList.remove("field-hidden", "field-reveal");
+    void el.offsetWidth; // restart the entrance animation
+    el.classList.add("field-reveal");
+  }
+
+  // Gizlerken DEĞERİ DE temizlemek şart: aksi halde Çipleme'de model seçip
+  // sonra hizmeti değiştiren kullanıcının bayat modeli gönderime sızar.
+  function hideDeviceList() {
+    deviceField.classList.add("field-hidden");
+    deviceSelect.clear();
+  }
+
+  function hideDeviceText() {
+    deviceTextField.classList.add("field-hidden");
+    deviceModelText.value = "";
+    toggleReq(deviceTextReq, true);
+  }
 
   const deviceSelect = createSelect("device", deviceReq);
   const serviceSelect = createSelect("service", serviceReq, (value) => {
-    if (value === CHIP_SERVICE) {
-      deviceField.classList.remove("field-hidden", "field-reveal");
-      void deviceField.offsetWidth; // restart the entrance animation
-      deviceField.classList.add("field-reveal");
-    } else {
-      deviceField.classList.add("field-hidden");
-      deviceSelect.clear();
-    }
+    if (value === CHIP_SERVICE) revealField(deviceField);
+    else hideDeviceList();
+
+    if (value === SALE_SERVICE) revealField(deviceTextField);
+    else hideDeviceText();
+  });
+
+  deviceModelText.addEventListener("input", () => {
+    toggleReq(deviceTextReq, deviceModelText.value.trim().length < DEVICE_MIN);
   });
 
   form.firstName.addEventListener("input", () => {
@@ -925,8 +969,11 @@
 
     const firstName = form.firstName.value.trim();
     const service = serviceSelect.value;
-    const needsDeviceModel = service === CHIP_SERVICE;
-    const deviceModel = deviceSelect.value;
+    // Hangi hizmet seçiliyse onun alanı okunuyor; ikisi aynı sütuna yazıyor.
+    const needsDeviceList = service === CHIP_SERVICE;
+    const needsDeviceText = service === SALE_SERVICE;
+    const needsDeviceModel = needsDeviceList || needsDeviceText;
+    const deviceModel = needsDeviceText ? deviceModelText.value.trim() : deviceSelect.value;
     const reviewText = form.reviewText.value.trim();
     const file = fileInput.files[0];
 
