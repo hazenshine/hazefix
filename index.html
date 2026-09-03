@@ -250,8 +250,8 @@
   .opt { font-weight: 400; font-size: 12px; color: var(--text-muted); }
   .req-hidden { opacity: 0; transform: scale(0.85); pointer-events: none; }
 
-  #ratingReadout { transition: opacity 150ms ease, transform 150ms ease; }
-  #ratingReadout.pulse { opacity: 0.3; transform: scale(0.94); }
+  .rating-readout { transition: opacity 150ms ease, transform 150ms ease; }
+  .rating-readout.pulse { opacity: 0.3; transform: scale(0.94); }
 
   input[type="text"], textarea {
     width: 100%;
@@ -646,15 +646,39 @@
     </div>
 
     <div class="field">
-      <label><span class="field-name"><span class="refdes"></span>Puan</span> <span class="req" id="ratingReq">(gerekli)</span></label>
-      <div class="stars" role="radiogroup" aria-label="Rating">
-        <input type="radio" id="star5" name="rating" value="5" required><label for="star5" title="Mükemmel">★</label>
-        <input type="radio" id="star4" name="rating" value="4"><label for="star4" title="İyi">★</label>
-        <input type="radio" id="star3" name="rating" value="3"><label for="star3" title="Orta">★</label>
-        <input type="radio" id="star2" name="rating" value="2"><label for="star2" title="Kötü">★</label>
-        <input type="radio" id="star1" name="rating" value="1"><label for="star1" title="Berbat">★</label>
+      <label><span class="field-name"><span class="refdes"></span>Hizmet Kalitesi</span> <span class="req" id="serviceQualityReq">(gerekli)</span></label>
+      <div class="stars" role="radiogroup" aria-label="Hizmet Kalitesi Puanı">
+        <input type="radio" id="sq-star5" name="ratingServiceQuality" value="5" required><label for="sq-star5" title="Mükemmel">★</label>
+        <input type="radio" id="sq-star4" name="ratingServiceQuality" value="4"><label for="sq-star4" title="İyi">★</label>
+        <input type="radio" id="sq-star3" name="ratingServiceQuality" value="3"><label for="sq-star3" title="Orta">★</label>
+        <input type="radio" id="sq-star2" name="ratingServiceQuality" value="2"><label for="sq-star2" title="Kötü">★</label>
+        <input type="radio" id="sq-star1" name="ratingServiceQuality" value="1"><label for="sq-star1" title="Berbat">★</label>
       </div>
-      <p class="helper" id="ratingReadout">Henüz puan seçilmedi.</p>
+      <p class="helper rating-readout" id="serviceQualityReadout">Henüz puan seçilmedi.</p>
+    </div>
+
+    <div class="field">
+      <label><span class="field-name"><span class="refdes"></span>Hizmet Süresi</span> <span class="req" id="serviceDurationReq">(gerekli)</span></label>
+      <div class="stars" role="radiogroup" aria-label="Hizmet Süresi Puanı">
+        <input type="radio" id="sd-star5" name="ratingServiceDuration" value="5" required><label for="sd-star5" title="Mükemmel">★</label>
+        <input type="radio" id="sd-star4" name="ratingServiceDuration" value="4"><label for="sd-star4" title="İyi">★</label>
+        <input type="radio" id="sd-star3" name="ratingServiceDuration" value="3"><label for="sd-star3" title="Orta">★</label>
+        <input type="radio" id="sd-star2" name="ratingServiceDuration" value="2"><label for="sd-star2" title="Kötü">★</label>
+        <input type="radio" id="sd-star1" name="ratingServiceDuration" value="1"><label for="sd-star1" title="Berbat">★</label>
+      </div>
+      <p class="helper rating-readout" id="serviceDurationReadout">Henüz puan seçilmedi.</p>
+    </div>
+
+    <div class="field">
+      <label><span class="field-name"><span class="refdes"></span>İletişim Kalitesi</span> <span class="req" id="communicationReq">(gerekli)</span></label>
+      <div class="stars" role="radiogroup" aria-label="İletişim Kalitesi Puanı">
+        <input type="radio" id="cm-star5" name="ratingCommunication" value="5" required><label for="cm-star5" title="Mükemmel">★</label>
+        <input type="radio" id="cm-star4" name="ratingCommunication" value="4"><label for="cm-star4" title="İyi">★</label>
+        <input type="radio" id="cm-star3" name="ratingCommunication" value="3"><label for="cm-star3" title="Orta">★</label>
+        <input type="radio" id="cm-star2" name="ratingCommunication" value="2"><label for="cm-star2" title="Kötü">★</label>
+        <input type="radio" id="cm-star1" name="ratingCommunication" value="1"><label for="cm-star1" title="Berbat">★</label>
+      </div>
+      <p class="helper rating-readout" id="communicationReadout">Henüz puan seçilmedi.</p>
     </div>
 
     <div class="field">
@@ -669,7 +693,7 @@
 
 <div class="modal-overlay" id="validationModal">
   <div class="modal-box" role="alertdialog" aria-modal="true" aria-labelledby="modalMsg">
-    <p id="modalMsg"><strong>İsim</strong>, <strong>Verilen Hizmet</strong>, <strong>Puan</strong> ve <strong>Yorum</strong> alanlarını doldurunuz.</p>
+    <p id="modalMsg"><strong>İsim</strong>, <strong>Verilen Hizmet</strong>, <strong>Hizmet Kalitesi</strong>, <strong>Hizmet Süresi</strong>, <strong>İletişim Kalitesi</strong> ve <strong>Yorum</strong> alanlarını doldurunuz.</p>
     <button type="button" id="modalOkBtn" class="modal-ok-btn">Tamam</button>
   </div>
 </div>
@@ -701,10 +725,8 @@
   const panel = document.getElementById("panel");
   const statusEl = document.getElementById("formStatus");
   const submitBtn = document.getElementById("submitBtn");
-  const ratingReadout = document.getElementById("ratingReadout");
   const fileInput = document.getElementById("imageUpload");
   const nameReq = document.getElementById("nameReq");
-  const ratingReq = document.getElementById("ratingReq");
   const reviewReq = document.getElementById("reviewReq");
   const serviceReq = document.getElementById("serviceReq");
   const deviceReq = document.getElementById("deviceReq");
@@ -907,66 +929,88 @@
     toggleReq(reviewReq, form.reviewText.value.trim().length < REVIEW_MIN);
   });
 
-  function pulseReadout(text) {
-    ratingReadout.style.transition = "none";
-    ratingReadout.classList.add("pulse");
-    ratingReadout.textContent = text;
-    void ratingReadout.offsetWidth;
-    ratingReadout.style.transition = "";
-    ratingReadout.classList.remove("pulse");
+  function pulseReadout(readoutEl, text) {
+    readoutEl.style.transition = "none";
+    readoutEl.classList.add("pulse");
+    readoutEl.textContent = text;
+    void readoutEl.offsetWidth;
+    readoutEl.style.transition = "";
+    readoutEl.classList.remove("pulse");
   }
 
-  let ratingHasBeenSelected = false;
+  // Üç kriter aynı yıldız bileşenini paylaşıyor, yalnızca radio group adı,
+  // (gerekli) rozeti ve okunan metin farklı. Puanlar burada, `ratings`
+  // nesnesinde, kriter başına ayrı ayrı tutuluyor — gönderim de bu nesneden
+  // okunuyor.
+  const ratings = { serviceQuality: null, serviceDuration: null, communication: null };
 
-  form.querySelectorAll('input[name="rating"]').forEach((input) => {
-    input.addEventListener("change", () => {
-      if (ratingHasBeenSelected) {
-        pulseReadout(`${input.value}/5 — ${RATING_LABELS[input.value]}`);
-      } else {
-        ratingReadout.textContent = `${input.value}/5 — ${RATING_LABELS[input.value]}`;
-        ratingHasBeenSelected = true;
-      }
-      toggleReq(ratingReq, false);
+  const RATING_CRITERIA = [
+    { key: "serviceQuality", name: "ratingServiceQuality", fieldName: "Hizmet Kalitesi", reqId: "serviceQualityReq", readoutId: "serviceQualityReadout" },
+    { key: "serviceDuration", name: "ratingServiceDuration", fieldName: "Hizmet Süresi", reqId: "serviceDurationReq", readoutId: "serviceDurationReadout" },
+    { key: "communication", name: "ratingCommunication", fieldName: "İletişim Kalitesi", reqId: "communicationReq", readoutId: "communicationReadout" },
+  ];
+
+  function setupStarRating({ key, name, reqId, readoutId }) {
+    const reqBadge = document.getElementById(reqId);
+    const readout = document.getElementById(readoutId);
+    const inputs = Array.from(form.querySelectorAll(`input[name="${name}"]`));
+    const container = inputs[0].closest(".stars");
+    let hasBeenSelected = false;
+
+    inputs.forEach((input) => {
+      input.addEventListener("change", () => {
+        ratings[key] = input.value;
+        const text = `${input.value}/5 — ${RATING_LABELS[input.value]}`;
+        if (hasBeenSelected) {
+          pulseReadout(readout, text);
+        } else {
+          readout.textContent = text;
+          hasBeenSelected = true;
+        }
+        toggleReq(reqBadge, false);
+      });
+
+      input.addEventListener("keydown", (e) => {
+        if (!["ArrowRight", "ArrowLeft", "ArrowUp", "ArrowDown"].includes(e.key)) return;
+        e.preventDefault();
+        const currentValue = Number(input.value);
+        const goingUp = e.key === "ArrowRight" || e.key === "ArrowUp";
+        const nextValue = goingUp ? Math.min(currentValue + 1, 5) : Math.max(currentValue - 1, 1);
+        const nextInput = form.querySelector(`input[name="${name}"][value="${nextValue}"]`);
+        if (nextInput) {
+          nextInput.checked = true;
+          nextInput.focus();
+          nextInput.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+      });
+
+      const label = form.querySelector(`label[for="${input.id}"]`);
+      label.addEventListener("mouseenter", () => {
+        if (form.querySelector(`input[name="${name}"]:checked`)) return;
+        pulseReadout(readout, `${input.value}/5 — ${RATING_LABELS[input.value]}`);
+      });
     });
 
-    input.addEventListener("keydown", (e) => {
-      if (!["ArrowRight", "ArrowLeft", "ArrowUp", "ArrowDown"].includes(e.key)) return;
-      e.preventDefault();
-      const currentValue = Number(input.value);
-      const goingUp = e.key === "ArrowRight" || e.key === "ArrowUp";
-      const nextValue = goingUp ? Math.min(currentValue + 1, 5) : Math.max(currentValue - 1, 1);
-      const nextInput = form.querySelector(`input[name="rating"][value="${nextValue}"]`);
-      if (nextInput) {
-        nextInput.checked = true;
-        nextInput.focus();
-        nextInput.dispatchEvent(new Event("change", { bubbles: true }));
-      }
+    container.addEventListener("mouseleave", () => {
+      if (form.querySelector(`input[name="${name}"]:checked`)) return;
+      pulseReadout(readout, "Henüz puan seçilmedi.");
     });
-  });
 
-  form.querySelectorAll(".stars label").forEach((label) => {
-    const starInput = document.getElementById(label.htmlFor);
-    label.addEventListener("mouseenter", () => {
-      if (form.querySelector('input[name="rating"]:checked')) return;
-      pulseReadout(`${starInput.value}/5 — ${RATING_LABELS[starInput.value]}`);
-    });
-  });
+    // Browsers can restore checked radios on page reload without firing
+    // change events, so sync the badge and state once on load.
+    const restored = form.querySelector(`input[name="${name}"]:checked`);
+    toggleReq(reqBadge, !restored);
+    if (restored) {
+      ratings[key] = restored.value;
+      readout.textContent = `${restored.value}/5 — ${RATING_LABELS[restored.value]}`;
+      hasBeenSelected = true;
+    }
+  }
 
-  document.querySelector(".stars").addEventListener("mouseleave", () => {
-    if (form.querySelector('input[name="rating"]:checked')) return;
-    pulseReadout("Henüz puan seçilmedi.");
-  });
+  RATING_CRITERIA.forEach(setupStarRating);
 
-  // Browsers can restore typed values / checked radios on page reload
-  // without firing input/change events, so sync the badges once on load.
-  const restoredRating = form.querySelector('input[name="rating"]:checked');
   toggleReq(nameReq, form.firstName.value.trim().length < NAME_MIN);
   toggleReq(reviewReq, form.reviewText.value.trim().length < REVIEW_MIN);
-  toggleReq(ratingReq, !restoredRating);
-  if (restoredRating) {
-    ratingReadout.textContent = `${restoredRating.value}/5 — ${RATING_LABELS[restoredRating.value]}`;
-    ratingHasBeenSelected = true;
-  }
 
   function setStatus(message, kind) {
     statusEl.textContent = message;
@@ -1029,7 +1073,6 @@
     const service = serviceSelect.value;
     const needsDeviceModel = service === CHIP_SERVICE;
     const deviceModel = deviceSelect.value;
-    const ratingInput = form.querySelector('input[name="rating"]:checked');
     const reviewText = form.reviewText.value.trim();
     const file = fileInput.files[0];
 
@@ -1040,7 +1083,9 @@
     if (firstName.length < NAME_MIN) missing.push("İsim");
     if (!service) missing.push("Verilen Hizmet");
     if (needsDeviceModel && !deviceModel) missing.push("Cihaz Modeli");
-    if (!ratingInput) missing.push("Puan");
+    RATING_CRITERIA.forEach((criterion) => {
+      if (!ratings[criterion.key]) missing.push(criterion.fieldName);
+    });
     if (reviewText.length < REVIEW_MIN) missing.push("Yorum");
 
     if (missing.length) {
@@ -1081,7 +1126,9 @@
         "İsim": firstName,
         "Hizmet": service,
         "Cihaz Modeli": needsDeviceModel ? deviceModel : null,
-        "Puan": Number(ratingInput.value),
+        "Hizmet Kalitesi": Number(ratings.serviceQuality),
+        "Hizmet Süresi": Number(ratings.serviceDuration),
+        "İletişim Kalitesi": Number(ratings.communication),
         "Yorum": reviewText,
         "Görsel Konumu": imagePath,
         "Onay": false,
