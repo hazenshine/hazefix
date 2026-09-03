@@ -21,6 +21,8 @@
     --bg: #141311;
     --panel: #1d1b18;
     --panel-border: #2f2b26;
+    --panel-edge: #2f2b26;
+    --panel-shadow: 0 18px 40px rgba(8, 7, 6, 0.55);
     --field-bg: #161513;
     --text-main: #edeae5;
     --text-muted: #a09a91;
@@ -45,43 +47,47 @@
      sağlıyor. Düğme kök elemana data-theme="light" / "dark" basıyor. */
   @media (prefers-color-scheme: light) {
     :root:not([data-theme="dark"]) {
-      --bg: #eaeeeb;
-      --panel: #fbfcfb;
-      --panel-border: #cfd8d2;
-      --field-bg: #f2f4f2;
-      --text-main: #16211a;
-      --text-muted: #5d6b62;
-      --copper: #9d5a29;
-      --copper-dim: #b98352;
-      --copper-bright: #85471d;
-      --copper-wash: rgba(157, 90, 41, 0.12);
-      --on-copper: #ffffff;
-      --star-empty: #ccd3cd;
-      --overlay: rgba(20, 30, 24, 0.4);
-      --glow: rgba(157, 90, 41, 0.05);
-      --signal: #226b45;
-      --danger: #b8402f;
+      --bg: #e3d0b3;
+      --panel: #e3d0b3;
+      --panel-border: #c9b492;
+      --panel-edge: transparent;
+      --panel-shadow: 18px 18px 36px #baab93, -18px -18px 36px #f2eadd;
+      --field-bg: #dbc7a6;
+      --text-main: #241d12;
+      --text-muted: #5f5342;
+      --copper: #824b22;
+      --copper-dim: #a3703f;
+      --copper-bright: #6b3c18;
+      --copper-wash: rgba(130, 75, 34, 0.14);
+      --on-copper: #f7efe2;
+      --star-empty: #c3ae8b;
+      --overlay: rgba(45, 33, 18, 0.45);
+      --glow: rgba(130, 75, 34, 0.06);
+      --signal: #206541;
+      --danger: #9c3628;
     }
   }
 
   /* Düğmeyle açık tema seçilirse işletim sistemi koyuda olsa bile kazanır. */
   :root[data-theme="light"] {
-    --bg: #eaeeeb;
-    --panel: #fbfcfb;
-    --panel-border: #cfd8d2;
-    --field-bg: #f2f4f2;
-    --text-main: #16211a;
-    --text-muted: #5d6b62;
-    --copper: #9d5a29;
-    --copper-dim: #b98352;
-    --copper-bright: #85471d;
-    --copper-wash: rgba(157, 90, 41, 0.12);
-    --on-copper: #ffffff;
-    --star-empty: #ccd3cd;
-    --overlay: rgba(20, 30, 24, 0.4);
-    --glow: rgba(157, 90, 41, 0.05);
-    --signal: #226b45;
-    --danger: #b8402f;
+    --bg: #e3d0b3;
+    --panel: #e3d0b3;
+    --panel-border: #c9b492;
+    --panel-edge: transparent;
+    --panel-shadow: 18px 18px 36px #baab93, -18px -18px 36px #f2eadd;
+    --field-bg: #dbc7a6;
+    --text-main: #241d12;
+    --text-muted: #5f5342;
+    --copper: #824b22;
+    --copper-dim: #a3703f;
+    --copper-bright: #6b3c18;
+    --copper-wash: rgba(130, 75, 34, 0.14);
+    --on-copper: #f7efe2;
+    --star-empty: #c3ae8b;
+    --overlay: rgba(45, 33, 18, 0.45);
+    --glow: rgba(130, 75, 34, 0.06);
+    --signal: #206541;
+    --danger: #9c3628;
   }
 
   * { box-sizing: border-box; }
@@ -100,13 +106,26 @@
     color: var(--text-main);
   }
 
+  /* Bej temada panel ile zemin AYNI renk (#e3d0b3); paneli ayıran tek şey
+     gölge. Bu yüzden iki token gerekti:
+       --panel-edge   panelin kenar çizgisi. Bej temada transparent — görünür
+                      bir çerçeve "aynı renkten yükselen katman" hissini
+                      bozardı. Koyu temada çizgi duruyor. Alan/modal
+                      kenarlıkları --panel-border'da kaldı, o ayrı.
+       --panel-shadow gölgenin tamamı. Her tema kendi derinlik kurgusunu
+                      tanımlıyor: koyuda tek yönlü düşen gölge, bej temada
+                      çift gölge (sağ-alt koyu #baab93, sol-üst açık #f2eadd)
+                      — ışık sol üstten geliyormuş gibi.
+     Gölgeyi token yapmanın sebebi §3'teki kural: her renk token olmak zorunda,
+     yoksa diğer temada ters düşer ve gözden kaçar. */
   .panel {
     width: 100%;
     max-width: 560px;
     background: var(--panel);
-    border: 1px solid var(--panel-border);
+    border: 1px solid var(--panel-edge);
     border-radius: 10px;
     padding: 40px 36px;
+    box-shadow: var(--panel-shadow);
   }
 
   header {
