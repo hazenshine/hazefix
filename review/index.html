@@ -14,70 +14,22 @@
      boyutları için çizildiği için küçük puntoda açık kalıyor. -->
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-  /* Nötr Antrasit — varsayılan tema. Nötrler bakıra doğru hafif sıcak
-     tutuldu ki aksan rengi yabancı durmasın. Her renk token olmak zorunda:
-     tek bir sabit hex kalırsa açık temada o eleman ters düşer. */
+  /* TEK TEMA (2026-09-03 kullanıcı kararı). Site yalnızca bu bej açık temayı
+     kullanıyor; koyu tema ve tema anahtarı kaldırıldı. İkinci tema tasarım
+     oturduktan sonra geri gelecek — o zaman bu blok :root'ta kalır, koyu palet
+     bir @media / [data-theme] bloğuna eklenir ve anahtar geri konur.
+     Kaldırılan hâli git geçmişinde: ffa1001 öncesi.
+     color-scheme: light zorunlu — yoksa işletim sistemi koyu temadayken
+     tarayıcı dosya seçici, kaydırma çubuğu gibi native kontrolleri koyu
+     boyuyor ve bej panelin içinde yabancı duruyorlar. */
   :root {
-    --bg: #141311;
-    --panel: #1d1b18;
-    --panel-border: #2f2b26;
-    --panel-edge: #2f2b26;
-    --panel-shadow: 0 0 14px rgba(0, 0, 0, 0.55);
-    --field-bg: #161513;
-    --text-main: #edeae5;
-    --text-muted: #a09a91;
-    --copper: #c6824f;
-    --copper-dim: #8a5c37;
-    --copper-bright: #d4915c;
-    --copper-wash: rgba(198, 130, 79, 0.15);
-    --on-copper: #14100b;
-    --star-filled: #7fd8a0;
-    --star-empty: #3a352e;
-    --overlay: rgba(8, 7, 6, 0.55);
-    --glow: rgba(198, 130, 79, 0.05);
-    --signal: #7fd8a0;
-    --danger: #e2685a;
-    --font-body: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-    --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-    --font-heading: "Fredoka", var(--font-body);
-  }
-
-  /* Açık tema. Varsayılan koyu olduğu için media query LIGHT'ı hedefliyor.
-     :not([data-theme="dark"]) koruması, tema düğmesiyle koyuyu seçen bir
-     ziyaretçinin işletim sistemi açık temadayken de koyuda kalmasını
-     sağlıyor. Düğme kök elemana data-theme="light" / "dark" basıyor. */
-  @media (prefers-color-scheme: light) {
-    :root:not([data-theme="dark"]) {
-      --bg: #e3d0b3;
-      --panel: #e3d0b3;
-      --panel-border: #c9b492;
-      --panel-edge: transparent;
-      --panel-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-      --field-bg: #dbc7a6;
-      --text-main: #241d12;
-      --text-muted: #4e4436;
-      --copper: #824b22;
-      --copper-dim: #a3703f;
-      --copper-bright: #6b3c18;
-      --copper-wash: rgba(130, 75, 34, 0.14);
-      --on-copper: #f7efe2;
-      --star-filled: #07303e;
-      --star-empty: #a39580;
-      --overlay: rgba(45, 33, 18, 0.45);
-      --glow: rgba(130, 75, 34, 0.06);
-      --signal: #206541;
-      --danger: #9c3628;
-    }
-  }
-
-  /* Düğmeyle açık tema seçilirse işletim sistemi koyuda olsa bile kazanır. */
-  :root[data-theme="light"] {
-    --bg: #e3d0b3;
-    --panel: #e3d0b3;
-    --panel-border: #c9b492;
+    color-scheme: light;
+    --bg: #f9e6ca;
+    --panel: #f9e6ca;
+    --panel-border: #d9c8b0;
     --panel-edge: transparent;
     --panel-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-    --field-bg: #dbc7a6;
+    --field-bg: #efddc2;
     --text-main: #241d12;
     --text-muted: #4e4436;
     --copper: #824b22;
@@ -86,11 +38,14 @@
     --copper-wash: rgba(130, 75, 34, 0.14);
     --on-copper: #f7efe2;
     --star-filled: #07303e;
-    --star-empty: #a39580;
+    --star-empty: #b4a792;
     --overlay: rgba(45, 33, 18, 0.45);
     --glow: rgba(130, 75, 34, 0.06);
     --signal: #206541;
     --danger: #9c3628;
+    --font-body: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    --font-heading: "Fredoka", var(--font-body);
   }
 
   * { box-sizing: border-box; }
@@ -143,81 +98,6 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: 20px;
-  }
-
-  .sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-
-  /* Tema anahtarı. Referanstaki hap biçimi yerine dikdörtgen: oran 2:1,
-     köşeler yalnızca hafifçe yuvarlatıldı (sipsivri değil, hap da değil). */
-  .theme-switch {
-    flex: none;
-    padding: 0;
-    border: 0;
-    background: none;
-    cursor: pointer;
-    line-height: 0;
-    border-radius: 8px;
-    outline: none;
-  }
-
-  .switch-track {
-    display: block;
-    position: relative;
-    width: 56px;
-    height: 28px;
-    padding: 3px;
-    border-radius: 7px;
-    border: 1px solid var(--panel-border);
-    background: var(--field-bg);
-    transition: background 180ms ease, border-color 180ms ease;
-  }
-
-  .theme-switch:focus-visible .switch-track {
-    border-color: var(--copper);
-    box-shadow: 0 0 0 2px var(--copper-wash);
-  }
-
-  .switch-knob {
-    display: grid;
-    place-items: center;
-    width: 22px;
-    height: 22px;
-    border-radius: 5px;
-    background: var(--text-muted);
-    color: var(--panel);
-    transform: translateX(0);
-    transition: transform 200ms cubic-bezier(0.3, 0.9, 0.4, 1), background 180ms ease, color 180ms ease;
-  }
-
-  /* Koyu tema açık: iz bakırla dolu, tuş sağda. */
-  .theme-switch[aria-checked="true"] .switch-track {
-    background: var(--copper);
-    border-color: var(--copper);
-  }
-
-  .theme-switch[aria-checked="true"] .switch-knob {
-    /* 56 - 2*3 padding - 22 tuş = 28px yol */
-    transform: translateX(28px);
-    background: var(--panel);
-    color: var(--copper);
-  }
-
-  .theme-switch[aria-checked="true"] .icon-moon,
-  .theme-switch[aria-checked="false"] .icon-sun {
-    display: none;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .switch-knob, .switch-track { transition: none; }
   }
 
   header h1 {
@@ -573,19 +453,6 @@
   .modal-ok-btn:active { transform: scale(0.96); }
 </style>
 
-<!-- Kayıtlı tema tercihi, sayfa BOYANMADAN önce uygulanmalı. Bu blok <body>'nin
-     sonundaki script'e taşınırsa ziyaretçi bir kare yanlış temayı görür ve sayfa
-     zıplar (FOUC). Tercih yoksa hiçbir şey basılmaz; o zaman CSS'teki
-     prefers-color-scheme devreye girer, varsayılan koyudur.
-     localStorage gizli sekmede / çerezler engelliyken throw edebilir. -->
-<script>
-  try {
-    var kayitli = localStorage.getItem("hazefix-theme");
-    if (kayitli === "light" || kayitli === "dark") {
-      document.documentElement.dataset.theme = kayitli;
-    }
-  } catch (e) {}
-</script>
 </head>
 <body>
 
@@ -596,33 +463,6 @@
       <p class="lede">Proje ya da tamir ile ilgili düşündüklerinizi anlatınız. Her yorum yayınlanmadan önce kontrol aşamasından geçecek.</p>
     </div>
 
-    <!-- aria-checked="true" = koyu tema açık. Simge eylemi gösteriyor:
-         koyudayken güneş ("aydınlığa geç"), aydınlıktayken ay. -->
-    <button type="button" id="themeToggle" class="theme-switch" role="switch" aria-checked="true">
-      <span class="switch-track">
-        <span class="switch-knob">
-          <svg class="icon-sun" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="4.2"></circle>
-            <path d="M12 1.8v2.4M12 19.8v2.4M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M1.8 12h2.4M19.8 12h2.4M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7"></path>
-          </svg>
-          <!-- Bu hilal YATAY EKSENE SİMETRİK, ve bu bilinçli bir karar.
-               Klasik eğik hilalde (Feather/Lucide tipi) oyuk sağ-üstte kalıyor;
-               kütle sol-alta yığıldığı için sınırlayıcı kutuya göre ortalayınca
-               göz ikonu aşağıda, kütleye göre ortalayınca yukarıda görüyor.
-               İkisinin ortası da dengeyi kurmadı — sorun konumda değil şekilde.
-               Burada dış çember (12,12) r=9 ve ısırık çemberi (16,12) r=7.5
-               aynı yatay eksende, dolayısıyla DİKEY hata matematiksel olarak
-               sıfır: ölçümde kutu merkezi 11.98, kütle merkezi 11.97.
-               Geriye yalnızca yatay fark kalıyor (kutu 10.00, kütle 8.83);
-               aşağıdaki kayma onu ortadan bölüyor.
-               Eğik bir hilale dönersen bu garanti kaybolur. -->
-          <svg class="icon-moon" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
-            <path transform="translate(2.59 0)" d="M17.09 4.58A9 9 0 1 0 17.09 19.42A7.5 7.5 0 0 1 17.09 4.58Z"></path>
-          </svg>
-        </span>
-      </span>
-      <span class="sr-only" id="themeToggleText">Koyu tema açık</span>
-    </button>
   </header>
 
   <form id="reviewForm" novalidate autocomplete="off">
@@ -767,48 +607,6 @@
   function toggleReq(badge, show) {
     badge.classList.toggle("req-hidden", !show);
   }
-
-  // --- Tema anahtarı ---
-  // Renkler tamamen CSS token'larından geliyor; buranın tek işi kök elemana
-  // data-theme basmak ve tercihi saklamak. <head>'deki küçük script aynı
-  // tercihi sayfa boyanmadan önce uyguluyor.
-  const THEME_KEY = "hazefix-theme";
-  const themeToggle = document.getElementById("themeToggle");
-  const themeToggleText = document.getElementById("themeToggleText");
-  const lightQuery = window.matchMedia("(prefers-color-scheme: light)");
-
-  // Varsayılan koyu. Açık tema yalnızca açıkça seçilmişse ya da seçim yokken
-  // işletim sistemi açık temadaysa geçerli.
-  function aktifTema() {
-    const secili = document.documentElement.dataset.theme;
-    if (secili === "light" || secili === "dark") return secili;
-    return lightQuery.matches ? "light" : "dark";
-  }
-
-  function temayiYansit(tema) {
-    const koyu = tema === "dark";
-    themeToggle.setAttribute("aria-checked", String(koyu));
-    themeToggleText.textContent = koyu ? "Koyu tema açık" : "Açık tema açık";
-  }
-
-  temayiYansit(aktifTema());
-
-  themeToggle.addEventListener("click", () => {
-    const yeni = aktifTema() === "dark" ? "light" : "dark";
-    document.documentElement.dataset.theme = yeni;
-    try {
-      localStorage.setItem(THEME_KEY, yeni);
-    } catch (e) {
-      // Gizli sekmede / çerezler engelliyken yazamayız; tema yine de değişir,
-      // sadece bir sonraki ziyarette hatırlanmaz.
-    }
-    temayiYansit(yeni);
-  });
-
-  // Ziyaretçi henüz elle seçim yapmadıysa işletim sistemi değişimini takip et.
-  lightQuery.addEventListener("change", () => {
-    if (!document.documentElement.dataset.theme) temayiYansit(aktifTema());
-  });
 
   // Alan etiketleri tıklanınca alanı odaklamıyor. <label for="..."> normalde
   // tıklamayı kendi kontrolüne yönlendirir; burada bu istenmiyor, çünkü
