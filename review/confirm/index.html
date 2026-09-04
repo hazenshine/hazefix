@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Yönetim sayfası: arama motorlarına girmesin. Bu bir GÜVENLİK önlemi DEĞİL
+     (adresi bilen zaten açar) — gerçek koruma veritabanı izinlerinde:
+     bekleyen yorumları yalnızca giriş yapmış kullanıcı okuyabiliyor. -->
+<meta name="robots" content="noindex, nofollow">
+<title>Onay Paneli — HazeFix</title>
+<!-- Yol KÖKTEN (/favicon.svg): bu dosya /review/confirm/ altında duruyor,
+     göreli yazılsaydı /review/confirm/favicon.svg aranır ve 404 alınırdı. -->
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Token bloğu review/index.html ile AYNI — bilinçli kopya.
+     CSS'i ortak bir styles.css'e çıkarma işi yol haritasının 4. maddesine
+     (anasayfa) bağlı; o gün üç sayfa da aynı dosyayı kullanacak. O güne kadar
+     buradaki bir rengi değiştirirsen formdakini de değiştir, yoksa iki sayfa
+     birbirinden ayrışır. Yalnızca bu sayfanın kullandığı token'lar kopyalandı. */
+  :root {
+    color-scheme: light;
+    --bg: #e6d3b3;
+    --panel: #e6d3b3;
+    --panel-border: #c8b79b;
+    --panel-edge: transparent;
+    --panel-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    --field-bg: #ddcaac;
+    --text-main: #241d12;
+    --text-muted: #4e4436;
+    --copper: #824b22;
+    --copper-dim: #9e6d3d;
+    --copper-bright: #6b3c18;
+    --copper-wash: rgba(130, 75, 34, 0.14);
+    --on-copper: #f7efe2;
+    --star-filled: #1c304e;
+    --star-empty: #1c304e;
+    --star-outline: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M10.1443 6.62753C10.931 4.66653 11.3243 3.68604 12.0006 3.68604C12.6769 3.68604 13.0702 4.66653 13.8568 6.62753L13.8934 6.71885C14.3378 7.82672 14.56 8.38065 15.0129 8.71734C15.4657 9.05403 16.0602 9.10727 17.2491 9.21374L17.464 9.23299C19.4099 9.40726 20.3828 9.49439 20.5909 10.1134C20.7991 10.7324 20.0766 11.3897 18.6316 12.7044L18.1493 13.1432C17.4178 13.8087 17.052 14.1414 16.8815 14.5776C16.8497 14.6589 16.8233 14.7423 16.8024 14.8271C16.6903 15.2817 16.7975 15.7645 17.0117 16.7299L17.0783 17.0305C17.472 18.8048 17.6688 19.692 17.3252 20.0746C17.1967 20.2176 17.0298 20.3206 16.8444 20.3712C16.3482 20.5066 15.6437 19.9325 14.2348 18.7844C13.3096 18.0305 12.847 17.6536 12.3159 17.5688C12.107 17.5354 11.8941 17.5354 11.6852 17.5688C11.1541 17.6536 10.6915 18.0305 9.76638 18.7844C8.35742 19.9325 7.65295 20.5066 7.15675 20.3712C6.97133 20.3206 6.80442 20.2176 6.676 20.0746C6.33232 19.692 6.52915 18.8048 6.92283 17.0305L6.9895 16.7299C7.20371 15.7645 7.31082 15.2817 7.19876 14.8271C7.17786 14.7423 7.15142 14.6589 7.11962 14.5776C6.94915 14.1414 6.5834 13.8087 5.85189 13.1432L5.36961 12.7044C3.92456 11.3897 3.20204 10.7324 3.41022 10.1134C3.6184 9.49439 4.59131 9.40726 6.53712 9.23299L6.75206 9.21374C7.94097 9.10727 8.53543 9.05403 8.98828 8.71734C9.44113 8.38065 9.66333 7.82672 10.1077 6.71885L10.1443 6.62753Z' stroke='black' stroke-width='2'/%3E%3C/svg%3E");
+    --star-solid: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M10.3065 7.21986C10.9486 5.61918 11.2696 4.81883 11.7912 4.70791C11.9283 4.67874 12.0701 4.67874 12.2072 4.70791C12.7288 4.81883 13.0499 5.61918 13.6919 7.21986C14.0571 8.13014 14.2396 8.58528 14.5812 8.89485C14.6771 8.98168 14.7811 9.05901 14.8918 9.12576C15.2867 9.36374 15.7796 9.40788 16.7653 9.49617C18.4341 9.64562 19.2685 9.72034 19.5233 10.1961C19.5761 10.2946 19.6119 10.4013 19.6294 10.5117C19.7139 11.0447 19.1005 11.6028 17.8737 12.7189L17.533 13.0288C16.9595 13.5506 16.6727 13.8115 16.5069 14.1372C16.4074 14.3325 16.3406 14.5428 16.3094 14.7598C16.2573 15.1215 16.3412 15.5 16.5092 16.2569L16.5692 16.5274C16.8704 17.8849 17.021 18.5637 16.833 18.8973C16.6641 19.197 16.3531 19.3889 16.0095 19.4053C15.627 19.4236 15.088 18.9844 14.01 18.106C13.2998 17.5273 12.9447 17.2379 12.5505 17.1249C12.1902 17.0216 11.8082 17.0216 11.448 17.1249C11.0538 17.2379 10.6986 17.5273 9.98844 18.106C8.91046 18.9844 8.37147 19.4236 7.98895 19.4053C7.64535 19.3889 7.33431 19.197 7.16544 18.8973C6.97745 18.5637 7.12805 17.8849 7.42924 16.5274L7.48925 16.2569C7.6572 15.5 7.74118 15.1215 7.68907 14.7598C7.65781 14.5428 7.59109 14.3325 7.49159 14.1372C7.32572 13.8115 7.03894 13.5506 6.4654 13.0288L6.12473 12.7189C4.89794 11.6028 4.28454 11.0447 4.36902 10.5117C4.38651 10.4013 4.42239 10.2946 4.47516 10.1961C4.72996 9.72034 5.56434 9.64562 7.2331 9.49617C8.21889 9.40788 8.71178 9.36374 9.10662 9.12576C9.21737 9.05901 9.32138 8.98168 9.4172 8.89485C9.75881 8.58528 9.94138 8.13014 10.3065 7.21986Z' fill='black' stroke='black' stroke-width='2'/%3E%3C/svg%3E");
+    --glow: rgba(130, 75, 34, 0.06);
+    --signal: #206541;
+    --danger: #9c3628;
+    --font-body: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    --font-heading: "Fredoka", var(--font-body);
+  }
+
+  * { box-sizing: border-box; }
+
+  /* Formda body dikeyde ORTALIYOR; burada ortalanmıyor: liste uzadığında
+     ortalanmış bir flex çocuğu yukarıdan taşar ve taşan kısma kaydırılamaz.
+     Bu sayfa listeyle uzayacağı için üstten hizalı. */
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 32px 20px;
+    background:
+      radial-gradient(circle at 15% 10%, var(--glow), transparent 40%),
+      var(--bg);
+    font-family: var(--font-body);
+    color: var(--text-main);
+  }
+
+  .panel {
+    width: 100%;
+    max-width: 560px;
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    border-radius: 15px;
+    padding: 40px 36px;
+    box-shadow: var(--panel-shadow);
+  }
+
+  /* Liste görünümü daha geniş: kart içinde üç puan satırı ve yorum metni var,
+     560px'te satırlar gereksiz kırılıyordu. Giriş ekranı dar kalıyor. */
+  .panel.wide { max-width: 760px; }
+
+  header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  header h1 {
+    font-family: var(--font-heading);
+    font-size: 26px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    margin: 0 0 32px;
+  }
+
+  .field { margin-bottom: 24px; }
+
+  label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+
+  .refdes {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--copper);
+    flex-shrink: 0;
+  }
+
+  .field-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  /* Dikey dolgu 10.5px — formdaki kutularla aynı yükseklik (44.5px). Yarım
+     piksel bilinçli, gerekçe review/index.html'de. */
+  input[type="email"], input[type="password"] {
+    width: 100%;
+    padding: 10.5px 13px;
+    font-size: 16px;
+    font-family: inherit;
+    color: var(--text-main);
+    background: var(--field-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: 6px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  input[type="email"]:focus, input[type="password"]:focus {
+    border-color: var(--copper);
+  }
+
+  .submit-btn {
+    width: 100%;
+    background: var(--copper);
+    color: var(--on-copper);
+    padding: 12.5px 20px;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    font-family: inherit;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s, opacity 0.15s, transform 0.1s ease;
+  }
+
+  .submit-btn:hover { background: var(--copper-bright); }
+  .submit-btn:active { transform: scale(0.96); }
+  .submit-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+  .status {
+    min-height: 19px;
+    font-size: 14px;
+    margin: 12px 0 0;
+    text-align: center;
+  }
+
+  .status.error { color: var(--danger); }
+  .status.ok { color: var(--signal); }
+
+  .hidden { display: none; }
+
+  /* ---- liste görünümü ---- */
+
+  .link-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--copper);
+    cursor: pointer;
+    text-decoration: underline;
+  }
+
+  .link-btn:hover { color: var(--copper-bright); }
+
+  .tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .tab {
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: transparent;
+    border: 1px solid var(--panel-border);
+    border-radius: 6px;
+    padding: 8px 14px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+
+  .tab:hover { border-color: var(--copper-dim); }
+
+  .tab.active {
+    background: var(--copper-wash);
+    border-color: var(--copper);
+    color: var(--copper-bright);
+  }
+
+  .rev {
+    border: 1px solid var(--panel-border);
+    border-radius: 10px;
+    padding: 20px 22px;
+    margin-bottom: 16px;
+    background: var(--field-bg);
+  }
+
+  @keyframes revOut {
+    to { opacity: 0; transform: scale(0.97); }
+  }
+
+  /* Onaylanan kart listeden çıkarken: işlemin gerçekten olduğu görünsün diye.
+     Kart DOM'dan animasyon bitince siliniyor. */
+  .rev.leaving {
+    animation: revOut 200ms ease forwards;
+    pointer-events: none;
+  }
+
+  .rev-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+  }
+
+  .rev-head h2 {
+    font-family: var(--font-heading);
+    font-weight: 500;
+    font-size: 19px;
+    margin: 0;
+  }
+
+  .rev-date { font-size: 13px; color: var(--text-muted); }
+
+  .rev-meta {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin: 0 0 14px;
+  }
+
+  .rev-scores {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    align-items: center;
+    gap: 4px 10px;
+    margin-bottom: 14px;
+  }
+
+  .rev-scores .crit { font-size: 14px; font-weight: 600; }
+  .rev-scores .num { font-size: 14px; color: var(--text-muted); }
+
+  .rstars { display: inline-flex; gap: 2px; }
+
+  /* Yıldızlar formdakiyle aynı maske mantığında, sadece küçük: rengi
+     background-color taşıyor, biçimi mask-image. Boş/dolu ayrımını RENK değil
+     BİÇİM yapıyor (ikisi de --star-filled ile aynı renkte). */
+  .rstar {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    background-color: var(--star-empty);
+    -webkit-mask: var(--star-outline) center / contain no-repeat;
+    mask: var(--star-outline) center / contain no-repeat;
+  }
+
+  .rstar.on {
+    background-color: var(--star-filled);
+    -webkit-mask-image: var(--star-solid);
+    mask-image: var(--star-solid);
+  }
+
+  .rev-text {
+    font-size: 15px;
+    line-height: 1.6;
+    margin: 0 0 14px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .rev-photo {
+    display: inline-block;
+    margin-bottom: 14px;
+  }
+
+  .rev-photo img {
+    max-width: 100%;
+    max-height: 220px;
+    border-radius: 6px;
+    border: 1px solid var(--panel-border);
+    display: block;
+  }
+
+  .rev-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .act-btn {
+    background: var(--copper);
+    color: var(--on-copper);
+    border: none;
+    border-radius: 6px;
+    padding: 10px 22px;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s, opacity 0.15s, transform 0.1s ease;
+  }
+
+  .act-btn:hover { background: var(--copper-bright); }
+  .act-btn:active { transform: scale(0.96); }
+  .act-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+  /* Onayı geri alma yıkıcı değil ama olumlu da değil: dolu bakır düğme
+     "yapılacak asıl iş" hissi verir, bu yüzden ikincil (çerçeveli) duruyor. */
+  .act-btn.ghost {
+    background: transparent;
+    color: var(--copper);
+    border: 1px solid var(--copper-dim);
+  }
+
+  .act-btn.ghost:hover { background: var(--copper-wash); color: var(--copper-bright); }
+
+  .row-status { font-size: 14px; color: var(--text-muted); }
+  .row-status.error { color: var(--danger); }
+
+  .empty {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 16px;
+    padding: 28px 0;
+    margin: 0;
+  }
+</style>
+</head>
+<body>
+
+<main class="panel" id="panel">
+
+  <!-- ---------- giriş ekranı ---------- -->
+  <section id="loginView">
+    <header><h1>Onay Paneli</h1></header>
+
+    <form id="loginForm" novalidate>
+      <div class="field">
+        <label for="email"><span class="field-name"><span class="refdes"></span>E-posta</span></label>
+        <input type="email" id="email" name="email" autocomplete="username" required>
+      </div>
+
+      <div class="field">
+        <label for="password"><span class="field-name"><span class="refdes"></span>Parola</span></label>
+        <input type="password" id="password" name="password" autocomplete="current-password" required>
+      </div>
+
+      <button type="submit" class="submit-btn" id="loginBtn">Giriş yap</button>
+      <p class="status" id="loginStatus" role="status"></p>
+    </form>
+  </section>
+
+  <!-- ---------- yorum listesi ---------- -->
+  <section id="listView" class="hidden">
+    <header>
+      <h1>Onay Paneli</h1>
+      <button type="button" class="link-btn" id="logoutBtn">Çıkış yap</button>
+    </header>
+
+    <div class="tabs">
+      <button type="button" class="tab active" id="tabPending" aria-pressed="true">Bekleyen</button>
+      <button type="button" class="tab" id="tabApproved" aria-pressed="false">Onaylı</button>
+      <button type="button" class="tab" id="refreshBtn">Yenile</button>
+    </div>
+
+    <div id="listBody"></div>
+    <p class="status" id="listStatus" role="status"></p>
+  </section>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // Formdakinin AYNISI: publishable (anon) anahtar. Sır değil, siteyi açan her
+  // tarayıcı zaten indiriyor — koruma RLS'te. Bu sayfayı açan biri giriş
+  // yapamadan hiçbir bekleyen yorumu göremez; dışarıdan kayıt da kapalı.
+  const SUPABASE_URL = "https://qnwolrpfbfepghpbyayc.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_3CTlSNBvufygcUI3xqXObg_Nn039a1s";
+
+  // Değişken adı supabaseClient — `supabase` DEĞİL: CDN kütüphanesi kendini
+  // window.supabase olarak tanımlıyor, aynı adı kullanmak sayfayı komple
+  // kırıyor (redeclaration of non-configurable global property).
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const RATING_LABELS = { 1: "Berbat", 2: "Kötü", 3: "Orta", 4: "İyi", 5: "Mükemmel" };
+
+  const CRITERIA = [
+    { column: "Hizmet Kalitesi", label: "Hizmet Kalitesi" },
+    { column: "Hizmet Süresi", label: "Hizmet Süresi" },
+    { column: "İletişim Kalitesi", label: "İletişim Kalitesi" },
+  ];
+
+  const loginView = document.getElementById("loginView");
+  const listView = document.getElementById("listView");
+  const panel = document.getElementById("panel");
+  const loginForm = document.getElementById("loginForm");
+  const loginBtn = document.getElementById("loginBtn");
+  const loginStatus = document.getElementById("loginStatus");
+  const logoutBtn = document.getElementById("logoutBtn");
+  const tabPending = document.getElementById("tabPending");
+  const tabApproved = document.getElementById("tabApproved");
+  const refreshBtn = document.getElementById("refreshBtn");
+  const listBody = document.getElementById("listBody");
+  const listStatus = document.getElementById("listStatus");
+
+  // Bekleyen mi onaylı mı gösteriliyor. Sekmeler bunu değiştiriyor.
+  let showApproved = false;
+  // Son çekilen satırlar. Sekme değişiminde tekrar ağa çıkmamak için burada.
+  let rows = [];
+
+  function setStatus(el, message, kind) {
+    el.textContent = message;
+    el.className = "status" + (kind ? " " + kind : "");
+  }
+
+  function showLogin() {
+    listView.classList.add("hidden");
+    loginView.classList.remove("hidden");
+    panel.classList.remove("wide");
+  }
+
+  function showList() {
+    loginView.classList.add("hidden");
+    listView.classList.remove("hidden");
+    panel.classList.add("wide");
+    loadReviews();
+  }
+
+  // ---------- giriş / çıkış ----------
+
+  loginForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = loginForm.email.value.trim();
+    const password = loginForm.password.value;
+
+    if (!email || !password) {
+      setStatus(loginStatus, "E-posta ve parolayı giriniz.", "error");
+      return;
+    }
+
+    loginBtn.disabled = true;
+    setStatus(loginStatus, "Giriş yapılıyor…");
+
+    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+    loginBtn.disabled = false;
+    if (error) {
+      console.error(error);
+      // Supabase "Invalid login credentials" diyor; hangisinin yanlış olduğunu
+      // söylememek bilinçli, e-posta doğrulaması yapan bir deneme kapısı olmasın.
+      setStatus(loginStatus, "E-posta ya da parola hatalı.", "error");
+      return;
+    }
+
+    setStatus(loginStatus, "");
+    loginForm.reset();
+    showList();
+  });
+
+  logoutBtn.addEventListener("click", async () => {
+    await supabaseClient.auth.signOut();
+    rows = [];
+    listBody.replaceChildren();
+    showLogin();
+  });
+
+  // ---------- liste ----------
+
+  tabPending.addEventListener("click", () => setTab(false));
+  tabApproved.addEventListener("click", () => setTab(true));
+  refreshBtn.addEventListener("click", loadReviews);
+
+  function setTab(approved) {
+    showApproved = approved;
+    tabPending.classList.toggle("active", !approved);
+    tabApproved.classList.toggle("active", approved);
+    tabPending.setAttribute("aria-pressed", String(!approved));
+    tabApproved.setAttribute("aria-pressed", String(approved));
+    render();
+  }
+
+  async function loadReviews() {
+    setStatus(listStatus, "Yükleniyor…");
+
+    // select("*") ve sıralama/filtreleme tarayıcıda: sütun adlarında boşluk ve
+    // Türkçe harf var ("Yorum Tarihi"), bunları PostgREST'in order/filter
+    // parametrelerinde tırnaklamak kırılgan. Satır sayısı düşük olduğu için
+    // hepsini çekip burada ayıklamak hem basit hem güvenli.
+    const { data, error } = await supabaseClient.from("reviews").select("*");
+
+    if (error) {
+      console.error(error);
+      // Oturum süresi dolduysa (ya da çıkış yapıldıysa) okuma yetkisi gider.
+      if (error.code === "PGRST301" || error.code === "42501") {
+        showLogin();
+        setStatus(loginStatus, "Oturum sona erdi, tekrar giriş yapınız.", "error");
+        return;
+      }
+      setStatus(listStatus, "Yorumlar getirilemedi. Birazdan tekrar deneyiniz.", "error");
+      return;
+    }
+
+    rows = data.slice().sort(
+      (a, b) => new Date(b["Yorum Tarihi"]) - new Date(a["Yorum Tarihi"])
+    );
+    setStatus(listStatus, "");
+    render();
+  }
+
+  function tarihYaz(iso) {
+    return new Date(iso).toLocaleString("tr-TR", {
+      day: "numeric", month: "long", year: "numeric",
+      hour: "2-digit", minute: "2-digit",
+    });
+  }
+
+  function starsFor(value) {
+    const wrap = document.createElement("span");
+    wrap.className = "rstars";
+    wrap.setAttribute("role", "img");
+    wrap.setAttribute("aria-label", `${value}/5 — ${RATING_LABELS[value]}`);
+    for (let i = 1; i <= 5; i++) {
+      const star = document.createElement("span");
+      star.className = i <= value ? "rstar on" : "rstar";
+      wrap.appendChild(star);
+    }
+    return wrap;
+  }
+
+  // Ziyaretçinin yazdığı metin HER YERDE textContent ile basılıyor, innerHTML
+  // ile DEĞİL: yorum alanı serbest metin, biri oraya HTML yazarsa bu sayfada
+  // çalışmasın. Kart kurulumunda innerHTML kullanma.
+  function cardFor(row) {
+    const card = document.createElement("article");
+    card.className = "rev";
+
+    const head = document.createElement("div");
+    head.className = "rev-head";
+    const name = document.createElement("h2");
+    name.textContent = row["İsim"];
+    const date = document.createElement("span");
+    date.className = "rev-date";
+    date.textContent = tarihYaz(row["Yorum Tarihi"]);
+    head.append(name, date);
+    card.appendChild(head);
+
+    // Hizmet ve cihaz modeli boş olabilir (model yalnızca bazı hizmetlerde
+    // soruluyor); olmayanı yazmıyoruz, "—" gibi bir yer tutucu koymuyoruz.
+    const metaParts = [row["Hizmet"], row["Cihaz Modeli"]].filter(Boolean);
+    if (metaParts.length) {
+      const meta = document.createElement("p");
+      meta.className = "rev-meta";
+      meta.textContent = metaParts.join(" · ");
+      card.appendChild(meta);
+    }
+
+    // Üç kriter ortalama ALINMADAN ayrı ayrı gösteriliyor (kullanıcı kararı).
+    const scores = document.createElement("div");
+    scores.className = "rev-scores";
+    CRITERIA.forEach(({ column, label }) => {
+      const crit = document.createElement("span");
+      crit.className = "crit";
+      crit.textContent = label;
+      const num = document.createElement("span");
+      num.className = "num";
+      num.textContent = `${row[column]}/5`;
+      scores.append(crit, starsFor(row[column]), num);
+    });
+    card.appendChild(scores);
+
+    const text = document.createElement("p");
+    text.className = "rev-text";
+    text.textContent = row["Yorum"];
+    card.appendChild(text);
+
+    if (row["Görsel Konumu"]) {
+      const { data } = supabaseClient.storage
+        .from("review-images")
+        .getPublicUrl(row["Görsel Konumu"]);
+      const link = document.createElement("a");
+      link.className = "rev-photo";
+      link.href = data.publicUrl;
+      link.target = "_blank";
+      link.rel = "noopener";
+      const img = document.createElement("img");
+      img.src = data.publicUrl;
+      img.alt = `${row["İsim"]} tarafından eklenen fotoğraf`;
+      img.loading = "lazy";
+      link.appendChild(img);
+      card.appendChild(link);
+    }
+
+    const actions = document.createElement("div");
+    actions.className = "rev-actions";
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = row["Onay"] ? "act-btn ghost" : "act-btn";
+    btn.textContent = row["Onay"] ? "Onayı geri al" : "Onayla";
+    const rowStatus = document.createElement("span");
+    rowStatus.className = "row-status";
+    actions.append(btn, rowStatus);
+    card.appendChild(actions);
+
+    btn.addEventListener("click", () => setApproval(row, card, btn, rowStatus));
+    return card;
+  }
+
+  async function setApproval(row, card, btn, rowStatus) {
+    const next = !row["Onay"];
+    btn.disabled = true;
+    rowStatus.className = "row-status";
+    rowStatus.textContent = next ? "Onaylanıyor…" : "Geri alınıyor…";
+
+    // .select() zincirlenmiyor. Formdaki insert tuzağının kardeşi: dönen satırı
+    // istemek RETURNING üretir, o da SELECT policy'sini çalıştırır. Burada
+    // authenticated hepsini okuyabildiği için sorun çıkarmazdı, ama gereksiz —
+    // ekrandaki değeri zaten biliyoruz.
+    const { error } = await supabaseClient
+      .from("reviews")
+      .update({ "Onay": next })
+      .eq("id", row.id);
+
+    if (error) {
+      console.error(error);
+      btn.disabled = false;
+      rowStatus.className = "row-status error";
+      rowStatus.textContent = "Kaydedilemedi.";
+      return;
+    }
+
+    row["Onay"] = next;
+
+    // Kart artık açık olan sekmeye ait değil: çıkış animasyonundan sonra
+    // listeden düşür ve sayıları tazele.
+    card.classList.add("leaving");
+    setTimeout(() => {
+      card.remove();
+      updateTabs();
+      if (!listBody.querySelector(".rev")) render();
+    }, 200);
+  }
+
+  function updateTabs() {
+    const bekleyen = rows.filter((r) => !r["Onay"]).length;
+    const onayli = rows.length - bekleyen;
+    tabPending.textContent = `Bekleyen (${bekleyen})`;
+    tabApproved.textContent = `Onaylı (${onayli})`;
+  }
+
+  function render() {
+    updateTabs();
+    const gosterilecek = rows.filter((r) => Boolean(r["Onay"]) === showApproved);
+    listBody.replaceChildren();
+
+    if (!gosterilecek.length) {
+      const bos = document.createElement("p");
+      bos.className = "empty";
+      bos.textContent = showApproved
+        ? "Henüz onaylanmış yorum yok."
+        : "Bekleyen yorum yok. Hepsi değerlendirilmiş.";
+      listBody.appendChild(bos);
+      return;
+    }
+
+    gosterilecek.forEach((row) => listBody.appendChild(cardFor(row)));
+  }
+
+  // Oturum tarayıcıda saklanıyor (supabase-js varsayılanı), yani sekme
+  // kapatılıp açılınca tekrar parola sorulmuyor. Sayfa açılışında hangi
+  // ekranın gösterileceğine bu karar veriyor.
+  (async () => {
+    const { data } = await supabaseClient.auth.getSession();
+    if (data.session) {
+      showList();
+    } else {
+      showLogin();
+    }
+  })();
+</script>
+
+</body>
+</html>
