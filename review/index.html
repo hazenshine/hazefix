@@ -26,24 +26,31 @@
      boyuyor ve bej panelin içinde yabancı duruyorlar. */
   :root {
     color-scheme: light;
-    --bg: #f9e6ca;
-    --panel: #f9e6ca;
-    --panel-border: #d9c8b0;
+    /* Zemin 2026-09-04'te #f9e6ca'dan #e6d3b3'e indi: yeni logonun zemin tonuyla
+       aynı olsun diye (kullanıcı kararı). Nötrler ORANLARINA göre yeniden
+       hesaplandı, hex'leri taşınmadı — gerekçe CLAUDE.md §3'te.
+       --field-bg 1.09:1, --panel-border 1.34:1. */
+    --bg: #e6d3b3;
+    --panel: #e6d3b3;
+    --panel-border: #c8b79b;
     --panel-edge: transparent;
     --panel-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-    --field-bg: #efddc2;
+    --field-bg: #ddcaac;
     --text-main: #241d12;
     --text-muted: #4e4436;
     --copper: #824b22;
-    --copper-dim: #a3703f;
+    /* Koyulaştırıldı: dosya seç butonunun kenarlığı bu renkte ve yeni zeminde
+       2.90:1'e düşüyordu. Arayüz bileşeni kenarlıkları için WCAG eşiği 3:1. */
+    --copper-dim: #9e6d3d;
     --copper-bright: #6b3c18;
     --copper-wash: rgba(130, 75, 34, 0.14);
     --on-copper: #f7efe2;
-    /* Yıldızlar 2026-09-03'te ★ karakterinden kullanıcının verdiği iki SVG'ye geçti.
-       İkisi de #07303e — durumu RENK değil BİÇİM ayırıyor: boş yıldız içi boş
-       (yalnızca kontur), dolu yıldız içi dolu. Kullanıcı kararı. */
-    --star-filled: #07303e;
-    --star-empty: #07303e;
+    /* Yıldızlar 2026-09-04'te ★ karakterinden kullanıcının verdiği iki SVG'ye geçti.
+       İkisi de #1c304e (logonun mürekkep rengi) — durumu RENK değil BİÇİM
+       ayırıyor: boş yıldız içi boş (yalnızca kontur), dolu yıldız içi dolu.
+       Kullanıcı kararı. Renk aynı gün #07303e'den logoyla eşleşsin diye değişti. */
+    --star-filled: #1c304e;
+    --star-empty: #1c304e;
     /* Yıldız biçimleri MASKE olarak duruyor, resim olarak değil: maskede rengi
        background-color veriyor, yani yukarıdaki iki token yıldızın rengini
        yönetmeye devam ediyor. SVG'nin içindeki "black" sadece maskenin kendisi
@@ -75,7 +82,7 @@
     color: var(--text-main);
   }
 
-  /* Panel ile zemin AYNI renk (--bg ve --panel ikisi de #f9e6ca); paneli
+  /* Panel ile zemin AYNI renk (--bg ve --panel ikisi de aynı token değerinde); paneli
      ayıran tek şey gölge. Bu yüzden iki token var:
        --panel-edge   panelin kenar çizgisi, şu an transparent — görünür bir
                       çerçeve "aynı renkten yükselen katman" hissini bozar.
