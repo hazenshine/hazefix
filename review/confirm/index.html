@@ -183,15 +183,38 @@
     color: var(--copper);
     cursor: pointer;
     text-decoration: underline;
+    transition: color 0.15s, transform 0.1s ease;
   }
 
   .link-btn:hover { color: var(--copper-bright); }
+  .link-btn:active { transform: scale(0.92); }
 
+  /* Sekmeler solda, Yenile aynı satırın SAĞ UCUNDA (kullanıcı isteği).
+     Yan yana dizilmiyorlar: sekmeler "hangi liste" sorusunu yönetiyor, Yenile
+     ise listeyi tazeliyor — aralarındaki boşluk bu farkı gösteriyor.
+     Boşluğu `margin-left: auto` açıyor; `justify-content: space-between`
+     DEĞİL, çünkü satır dar ekranda sarınca o kural grubun kendi içindeki
+     hizasını da bozar. */
   .tabs {
     display: flex;
+    align-items: flex-start;
     gap: 8px;
     margin-bottom: 20px;
+    /* Bu satır SARMIYOR: sarsaydı Yenile dar ekranda alta düşer ve
+       "sekmelerin sağında" olma özelliğini kaybederdi. Sarma işi içerideki
+       gruba bırakıldı — sekmeler alt alta iner, Yenile sağ üstte kalır. */
+    flex-wrap: nowrap;
+  }
+
+  .tab-group {
+    display: flex;
+    gap: 8px;
     flex-wrap: wrap;
+  }
+
+  .tab-spaced {
+    margin-left: auto;
+    flex-shrink: 0;
   }
 
   .tab {
@@ -204,10 +227,11 @@
     border-radius: 6px;
     padding: 8px 14px;
     cursor: pointer;
-    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.1s ease;
   }
 
   .tab:hover { border-color: var(--copper-dim); }
+  .tab:active { transform: scale(0.96); }
 
   .tab.active {
     background: var(--copper-wash);
@@ -344,6 +368,16 @@
 
   .act-btn.ghost:hover { background: var(--copper-wash); color: var(--copper-bright); }
 
+  /* Arşivle: Onayla'nın açık renklisi (kullanıcı isteği). Aynı bakır ailesinden
+     ama dolgusu yıkanmış — yan yana dururken hangisinin asıl eylem olduğu
+     belli olsun, ikisi de eşit ağırlıkta görünmesin. */
+  .act-btn.light {
+    background: var(--copper-wash);
+    color: var(--copper-bright);
+  }
+
+  .act-btn.light:hover { background: rgba(130, 75, 34, 0.22); }
+
   .row-status { font-size: 14px; color: var(--text-muted); }
   .row-status.error { color: var(--danger); }
 
@@ -388,9 +422,12 @@
     </header>
 
     <div class="tabs">
-      <button type="button" class="tab active" id="tabPending" aria-pressed="true">Bekleyen</button>
-      <button type="button" class="tab" id="tabApproved" aria-pressed="false">Onaylı</button>
-      <button type="button" class="tab" id="refreshBtn">Yenile</button>
+      <div class="tab-group">
+        <button type="button" class="tab active" id="tabPending" aria-pressed="true">Bekleyen</button>
+        <button type="button" class="tab" id="tabApproved" aria-pressed="false">Onaylı</button>
+        <button type="button" class="tab" id="tabArchived" aria-pressed="false">Arşiv</button>
+      </div>
+      <button type="button" class="tab tab-spaced" id="refreshBtn">Yenile</button>
     </div>
 
     <div id="listBody"></div>
@@ -429,12 +466,39 @@
   const logoutBtn = document.getElementById("logoutBtn");
   const tabPending = document.getElementById("tabPending");
   const tabApproved = document.getElementById("tabApproved");
+  const tabArchived = document.getElementById("tabArchived");
   const refreshBtn = document.getElementById("refreshBtn");
   const listBody = document.getElementById("listBody");
   const listStatus = document.getElementById("listStatus");
 
-  // Bekleyen mi onaylı mı gösteriliyor. Sekmeler bunu değiştiriyor.
-  let showApproved = false;
+  // Üç sekmenin ortak tanımı. Her sekme kendi filtresini ve boş liste metnini
+  // taşıyor; dördüncü bir sekme gerekirse buraya bir satır eklemek ve HTML'de
+  // aynı kalıbı tekrarlamak yeterli, aşağıdaki mantığa dokunma.
+  // Arşiv HER ŞEYDEN ÖNCE geliyor: arşivlenmiş bir satır onaylı bile olsa
+  // Bekleyen/Onaylı listelerinde görünmemeli.
+  const VIEWS = {
+    pending: {
+      tab: tabPending,
+      label: "Bekleyen",
+      match: (r) => !r["Arşiv"] && !r["Onay"],
+      empty: "Bekleyen yorum yok. Hepsi değerlendirilmiş.",
+    },
+    approved: {
+      tab: tabApproved,
+      label: "Onaylı",
+      match: (r) => !r["Arşiv"] && r["Onay"],
+      empty: "Henüz onaylanmış yorum yok.",
+    },
+    archived: {
+      tab: tabArchived,
+      label: "Arşiv",
+      match: (r) => Boolean(r["Arşiv"]),
+      empty: "Arşiv boş.",
+    },
+  };
+
+  // Hangi sekme açık. Sekmeler bunu değiştiriyor.
+  let view = "pending";
   // Son çekilen satırlar. Sekme değişiminde tekrar ağa çıkmamak için burada.
   let rows = [];
 
@@ -496,16 +560,17 @@
 
   // ---------- liste ----------
 
-  tabPending.addEventListener("click", () => setTab(false));
-  tabApproved.addEventListener("click", () => setTab(true));
+  Object.keys(VIEWS).forEach((key) => {
+    VIEWS[key].tab.addEventListener("click", () => setTab(key));
+  });
   refreshBtn.addEventListener("click", loadReviews);
 
-  function setTab(approved) {
-    showApproved = approved;
-    tabPending.classList.toggle("active", !approved);
-    tabApproved.classList.toggle("active", approved);
-    tabPending.setAttribute("aria-pressed", String(!approved));
-    tabApproved.setAttribute("aria-pressed", String(approved));
+  function setTab(key) {
+    view = key;
+    Object.entries(VIEWS).forEach(([name, def]) => {
+      def.tab.classList.toggle("active", name === key);
+      def.tab.setAttribute("aria-pressed", String(name === key));
+    });
     render();
   }
 
@@ -622,24 +687,46 @@
 
     const actions = document.createElement("div");
     actions.className = "rev-actions";
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = row["Onay"] ? "act-btn ghost" : "act-btn";
-    btn.textContent = row["Onay"] ? "Onayı geri al" : "Onayla";
     const rowStatus = document.createElement("span");
     rowStatus.className = "row-status";
-    actions.append(btn, rowStatus);
-    card.appendChild(actions);
 
-    btn.addEventListener("click", () => setApproval(row, card, btn, rowStatus));
+    // Hangi sekmede hangi düğmeler duruyor. "Arşivle" onaylıda da var:
+    // yayınlanmış bir yorum sonradan kaldırılmak istenebilir.
+    //
+    // Arşivleme "Onay"ı da false'a çekiyor. Sebep: arşiv "gözümün önünden
+    // kalksın" demek, onaylı kalan bir satır ise siteye düşer. Arşivden
+    // çıkarılan yorum bu yüzden Onaylı'ya değil Bekleyen'e döner —
+    // yeniden karar verilsin.
+    const buttons = row["Arşiv"]
+      ? [{ text: "Arşivden çıkar", cls: "act-btn ghost", busy: "Çıkarılıyor…", patch: { "Arşiv": false } }]
+      : [
+          row["Onay"]
+            ? { text: "Onayı geri al", cls: "act-btn ghost", busy: "Geri alınıyor…", patch: { "Onay": false } }
+            : { text: "Onayla", cls: "act-btn", busy: "Onaylanıyor…", patch: { "Onay": true } },
+          { text: "Arşivle", cls: "act-btn light", busy: "Arşivleniyor…", patch: { "Arşiv": true, "Onay": false } },
+        ];
+
+    const btnEls = buttons.map((spec) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = spec.cls;
+      btn.textContent = spec.text;
+      btn.addEventListener("click", () => applyPatch(row, card, btnEls, rowStatus, spec));
+      actions.appendChild(btn);
+      return btn;
+    });
+
+    actions.appendChild(rowStatus);
+    card.appendChild(actions);
     return card;
   }
 
-  async function setApproval(row, card, btn, rowStatus) {
-    const next = !row["Onay"];
-    btn.disabled = true;
+  async function applyPatch(row, card, btnEls, rowStatus, spec) {
+    // Karttaki bütün düğmeler kilitleniyor, yalnızca basılan değil: iki işlem
+    // aynı satırda yarışmasın.
+    btnEls.forEach((b) => { b.disabled = true; });
     rowStatus.className = "row-status";
-    rowStatus.textContent = next ? "Onaylanıyor…" : "Geri alınıyor…";
+    rowStatus.textContent = spec.busy;
 
     // .select() zincirlenmiyor. Formdaki insert tuzağının kardeşi: dönen satırı
     // istemek RETURNING üretir, o da SELECT policy'sini çalıştırır. Burada
@@ -647,47 +734,51 @@
     // ekrandaki değeri zaten biliyoruz.
     const { error } = await supabaseClient
       .from("reviews")
-      .update({ "Onay": next })
+      .update(spec.patch)
       .eq("id", row.id);
 
     if (error) {
       console.error(error);
-      btn.disabled = false;
+      btnEls.forEach((b) => { b.disabled = false; });
       rowStatus.className = "row-status error";
       rowStatus.textContent = "Kaydedilemedi.";
       return;
     }
 
-    row["Onay"] = next;
+    Object.assign(row, spec.patch);
+    updateTabs();
 
-    // Kart artık açık olan sekmeye ait değil: çıkış animasyonundan sonra
-    // listeden düşür ve sayıları tazele.
+    // Satır hâlâ açık sekmeye aitse (ileride öyle bir düğme eklenirse) kart
+    // yerinde kalır, yalnızca düğmeleri tazelenir. Bugünkü dört düğmenin
+    // dördü de satırı sekmeden çıkarıyor: çıkış animasyonundan sonra düşer.
+    if (VIEWS[view].match(row)) {
+      card.replaceWith(cardFor(row));
+      return;
+    }
+
     card.classList.add("leaving");
     setTimeout(() => {
       card.remove();
-      updateTabs();
       if (!listBody.querySelector(".rev")) render();
     }, 200);
   }
 
   function updateTabs() {
-    const bekleyen = rows.filter((r) => !r["Onay"]).length;
-    const onayli = rows.length - bekleyen;
-    tabPending.textContent = `Bekleyen (${bekleyen})`;
-    tabApproved.textContent = `Onaylı (${onayli})`;
+    Object.values(VIEWS).forEach((def) => {
+      def.tab.textContent = `${def.label} (${rows.filter(def.match).length})`;
+    });
   }
 
   function render() {
     updateTabs();
-    const gosterilecek = rows.filter((r) => Boolean(r["Onay"]) === showApproved);
+    const aktif = VIEWS[view];
+    const gosterilecek = rows.filter(aktif.match);
     listBody.replaceChildren();
 
     if (!gosterilecek.length) {
       const bos = document.createElement("p");
       bos.className = "empty";
-      bos.textContent = showApproved
-        ? "Henüz onaylanmış yorum yok."
-        : "Bekleyen yorum yok. Hepsi değerlendirilmiş.";
+      bos.textContent = aktif.empty;
       listBody.appendChild(bos);
       return;
     }
