@@ -1093,7 +1093,6 @@
     const kritYildiz = 46;
     const kritSatirH = 58;
     const kritAra = 16;
-    const altBilgiBoyu = 26;
 
     const meta = [row["Hizmet"], row["Cihaz Modeli"]].filter(Boolean).join(" · ");
     const kritBlok = CRITERIA.length * kritSatirH + (CRITERIA.length - 1) * kritAra;
@@ -1104,8 +1103,7 @@
       isimBoyu * 1.2 +
       (meta ? metaBoyu * 1.3 + 6 : 0) +
       36 +                                    // puanlardan önceki boşluk
-      kritBlok +
-      36 + altBilgiBoyu * 1.2;                // alt bilgi
+      kritBlok;
 
     // --- yorum metnini kalan alana sığacak EN BÜYÜK punto ile yerleştir ---
     const kalan = icH - sabit;
@@ -1151,7 +1149,11 @@
       y += punto * STORY.lineHeight;
     });
 
-    y = icY + icH - (altBilgiBoyu * 1.2) - 36 - kritBlok - 36
+    // Alt blok (isim + hizmet + puanlar) kartın DİBİNE yaslanıyor; yorum metni
+    // yukarıdan gelip aradaki boşlukta ortalanıyor. "hazefix.org" alt yazısı
+    // 2026-09-05'te kullanıcı isteğiyle kaldırıldı, o yüzden en alttaki blok
+    // artık puan satırları.
+    y = icY + icH - kritBlok - 36
         - (meta ? metaBoyu * 1.3 + 6 : 0) - isimBoyu * 1.2;
 
     ctx.fillStyle = renk.text;
@@ -1183,10 +1185,6 @@
       }
       y += kritSatirH + kritAra;
     });
-
-    ctx.fillStyle = renk.muted;
-    ctx.font = `700 ${altBilgiBoyu}px "Nunito Sans", sans-serif`;
-    ctx.fillText("hazefix.org", icX, icY + icH - altBilgiBoyu * 1.2);
 
     return { canvas: cv, kisaltildi };
   }
