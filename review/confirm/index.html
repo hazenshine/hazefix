@@ -1265,6 +1265,21 @@
     const fotoX = kartX + kartG - FOTO_SAG_PAY - fotoG;
     const darG = fotoX - FOTO_BOSLUK - icX;
 
+    // İsim ve hizmet satırı karta sığdırılıyor; sığmazsa puntoları düşüyor,
+    // taban puntoda da sığmazsa sonları kırpılıyor. Yatay fotoğrafta İSİM
+    // fotoğrafın yanında kaldığı için dar sütuna sığdırılıyor; hizmet satırı
+    // fotoğrafın altında olduğundan tam genişlikte.
+    //
+    // Bu hesap metin sarmasından ÖNCE yapılmalı: yatay fotoğrafın dikey yeri
+    // isim satırına göre belirleniyor, yani sarma eşiği ismin nihai puntosunu
+    // bilmek zorunda. Sonraya bırakıldığında sarma 46'yı, çizim ise küçülmüş
+    // puntoyu kullanıyordu ve fotoğraf metnin üstüne biniyordu.
+    const isimSig = sigdir(ctx, String(row["İsim"] || ""), yatayFoto ? darG : icG,
+      (p) => `500 ${p}px Fredoka, sans-serif`, isimBoyu, 28);
+    const metaSig = meta
+      ? sigdir(ctx, meta, icG, (p) => `400 ${p}px "Nunito Sans", sans-serif`, metaBoyu, 26)
+      : { punto: metaBoyu, metin: "" };
+
     const ustBlokTahmin = Math.max(0, tirnakH - tirnakKaydir) + ARALIK_UST + STORY.textSize * 0.2;
     const altBlokTahmin =
       ARALIK_ALT +
@@ -1284,31 +1299,37 @@
     let punto = STORY.textSize;
     let satirlar = [];
 
-    // Fotoğrafın kaç satırı daralttığı puntoya bağlı, punto da satır sayısına —
-    // o yüzden ikisi aynı döngüde çözülüyor. `+16` fotoğrafın hemen yanındaki
-    // satırın kenarına yapışmaması için pay.
-    //
-    // DİKEY: fotoğraf blok başında, İLK satırlar dar.
-    // YATAY: fotoğraf isim hizasında, SON satırlar dar. Yatayda fotoğrafın
-    //   metinle çakışan kısmı yüksekliğinin tamamı değil — alt ucu isim
-    //   satırının yanında duruyor, o kadarı metnin dışında kalıyor.
-    const darSatirSayisi = (p) => {
-      if (!foto) return 0;
-      const yukseklik = yatayFoto
-        ? fotoY - (ARALIK_ALT + isimBoyu * 1.2)
-        : fotoY + 16 - rMetinYTahmin;
-      return Math.max(0, Math.ceil(yukseklik / (p * STORY.lineHeight)));
-    };
+    // DİKEY fotoğrafta dar satırlar BAŞTA; fotoğraf blok başından başlıyor.
+    const darSatirSayisi = (p) =>
+      (foto && !yatayFoto)
+        ? Math.max(0, Math.ceil((fotoY + 16 - rMetinYTahmin) / (p * STORY.lineHeight)))
+        : 0;
 
-    // Yatay fotoğrafta dar satırlar SONDA. Fotoğrafın üst kenarı metnin
-    // ALTINDAN konumlandığı için hangi satırların daralacağı toplam satır
-    // sayısına, o da sarmanın kendisine bağlı — döngüsel bir bağ.
+    // Yatay fotoğrafta fotoğrafın ALT kenarı isim satırının ORTASINA hizalı
+    // (kullanıcı isteği), yani konumu metnin bitişine bağlı; hangi satırların
+    // daralacağı da toplam satır sayısına, o da sarmanın kendisine bağlı.
     //
-    // "Tahmin et, tekrar sar" yöntemi denendi ve BIRAKILDI: iki değer arasında
-    // salınıyor, üç turda oturmuyor ve gereğinden fazla satır daralıyordu
-    // (ölçüldü: 3 satır beklenirken 7 satır daraldı). Onun yerine tam sayım:
-    // olası toplam satır sayıları sırayla denenip KENDİNİ DOĞRULAYAN ilki
-    // alınıyor. Satır sayısı 25'i geçmediği için bu döngü ucuz.
+    // Eşik, ÇİZİMLE BİREBİR AYNI formülden geliyor — bu kritik. Önce sarma
+    // `isimBoyu` (46) ile, çizim ise sığdırılmış `isimSig.punto` ile
+    // hesaplanıyordu; isim küçüldüğünde fotoğraf hesaplanandan yukarı kayıp
+    // metnin ÜSTÜNE biniyordu. Aynı sebeple son satırın alta sarkan payı
+    // burada 0 sayılıyor: fotoğrafı olabileceği EN YUKARI noktaya koyar, yani
+    // gerektiğinden az değil fazla satır daraltır — güvenli yön.
+    const fotoUstMesafesi = (N, lh) =>
+      (N - 1) * lh + ARALIK_ALT + isimSig.punto / 2 - fotoY;
+
+    // Aday N (toplam satır sayısı) arttıkça fotoğraf aşağı iniyor, dolayısıyla
+    // daralan satır azalıyor ve sonuçtaki satır sayısı düşüyor. Yani aradığımız
+    // şey monoton bir eğrinin sabit noktası.
+    //
+    // GÜVENLİ YÖN ÖNEMLİ: sonuç adaydan AZ çıkarsa fotoğraf hesaplanandan
+    // yukarıda durur ve metnin üstüne biner. Bu yüzden "sonuç ≥ aday" koşulunu
+    // sağlayan EN BÜYÜK aday seçiliyor — tam sabit nokta varsa zaten odur,
+    // yoksa bir fazla satır daralır ki bu yalnızca biraz boşluk demek.
+    //
+    // Önceki sürüm sabit nokta bulunamayınca SON denemeyi döndürüyordu; o da
+    // en az daraltılmış aday olduğu için fotoğraf metnin üstüne biniyordu.
+    // "Tahmin et, tekrar sar" yöntemi de denendi, iki değer arasında salınıyor.
     const sarmaliBol = (p) => {
       const lh = p * STORY.lineHeight;
       if (!foto) return satirlaraBol(ctx, yorum, icG);
@@ -1317,16 +1338,16 @@
         return k === 0 ? satirlaraBol(ctx, yorum, icG)
                        : satirlaraBol(ctx, yorum, (i) => (i < k ? darG : icG));
       }
+      const sar = (N) => satirlaraBol(ctx, yorum,
+        (i) => ((i + 1) * lh > fotoUstMesafesi(N, lh) ? darG : icG));
       const n0 = satirlaraBol(ctx, yorum, icG).length;   // daraltma yokken
-      let son = null;
-      for (let N = n0; N <= n0 + 15; N++) {
-        // N satır olsaydı fotoğrafın üst kenarı nerede olurdu?
-        const fotoUst = N * lh + ARALIK_ALT + isimBoyu * 1.2 - fotoY;
-        const s = satirlaraBol(ctx, yorum, (i) => ((i + 1) * lh > fotoUst ? darG : icG));
-        if (s.length === N) return s;                    // varsayım doğrulandı
-        son = s;
+      let secilen = sar(n0);                             // n0'da koşul hep sağlanır
+      for (let N = n0 + 1; N <= n0 + 20; N++) {
+        const s = sar(N);
+        if (s.length < N) break;
+        secilen = s;
       }
-      return son;
+      return secilen;
     };
 
     const icerikYuksekligi = (n, p) => {
@@ -1366,15 +1387,6 @@
     ctx.font = `400 ${punto}px "Nunito Sans", sans-serif`;
     const ilkOlcu = ctx.measureText(satirlar[0] || "");
     const sonOlcu = ctx.measureText(satirlar[satirlar.length - 1] || "");
-    // İsim ve hizmet satırı karta sığdırılıyor; sığmazsa puntoları düşüyor,
-    // taban puntoda da sığmazsa sonları kırpılıyor.
-    // Yatay fotoğrafta İSİM fotoğrafın yanında kalıyor, o yüzden ona dar sütun
-    // veriliyor. Hizmet satırı fotoğrafın altında olduğu için tam genişlikte.
-    const isimSig = sigdir(ctx, String(row["İsim"] || ""), yatayFoto ? darG : icG,
-      (p) => `500 ${p}px Fredoka, sans-serif`, isimBoyu, 28);
-    const metaSig = meta
-      ? sigdir(ctx, meta, icG, (p) => `400 ${p}px "Nunito Sans", sans-serif`, metaBoyu, 26)
-      : { punto: metaBoyu, metin: "" };
 
     ctx.font = `500 ${isimSig.punto}px Fredoka, sans-serif`;
     const isimOlcu = ctx.measureText(isimSig.metin);
@@ -1396,7 +1408,10 @@
     let rIsimY, rFotoY;
     if (yatayFoto) {
       rIsimY = rSonAlt + ARALIK_ALT + isimOlcu.actualBoundingBoxAscent;
-      rFotoY = rIsimY + isimSig.punto * 1.2 - fotoY;
+      // Alt kenar isim satırının ORTASINDA (kullanıcı isteği: "isim satırının
+      // ortası gibi bir hizaya denk gelsin"). Formül sarma eşiğiyle AYNI —
+      // ikisi ayrıştığında fotoğraf metnin üstüne biniyor.
+      rFotoY = rSonAlt + ARALIK_ALT + isimSig.punto / 2 - fotoY;
       // Kısa bir yorumda fotoğraf kartın üstünden taşabiliyor; o durumda
       // fotoğrafı yukarı kırpmak yerine ismi aşağı itiyoruz.
       if (rFotoY < 0) { rIsimY -= rFotoY; rFotoY = 0; }
