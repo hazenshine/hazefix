@@ -1104,20 +1104,44 @@
 
     // Glif ayrıca 0.18 em yukarı kaydırılarak çiziliyor (kutunun üstündeki
     // boşluğu yutmak için), o yüzden gerçek alt kenarı bu kadar yukarıda.
-    // Tırnakla metin arasındaki pay. Kutu ölçülürken ~100px'ti ve "çok fazla"
-    // bulundu, glif ölçümüne geçince 26'ya düştü ve bu kez "çok iç içe" oldu;
-    // 48 ikisinin arası.
     const tirnakKaydir = tirnakBoyu * 0.18;
-    const ustBlok = Math.max(0, tirnakH - tirnakKaydir) + 48;
-    const altBlok =
-      44 +                                     // metinden sonraki boşluk
+
+    // Tırnak↔metin ve metin↔isim aralıkları. Kullanıcı isteği (2026-09-05):
+    // üstteki, alttakinin YARISI kadar olsun — ekranda 36px'e karşı 72px.
+    //
+    // İki şey bilinçli:
+    //
+    // 1) Aralıklar satırın çizim noktasına göre değil, HARFLERİN KENARLARINA
+    //    göre kuruluyor (measureText'in actualBoundingBox ölçüleriyle). Sabit
+    //    sayı kullanıldığında aralık yoruma göre oynuyordu: son satırı
+    //    "index.html" olan bir yorumda alta sarkan harf olmadığı için boşluk
+    //    büyük, "gönderin lütfen." ile bitende küçük görünüyordu. Ölçüldü —
+    //    şimdi iki yorumda da birebir aynı.
+    //
+    // 2) Sayılar doğrudan ekrandaki piksel değerleri: 36 ve 72. Çizilen
+    //    görüntüden ölçülerek doğrulandı (tırnağın son satırı ile metnin ilk
+    //    satırı arasında 36px, metnin son satırı ile ismin ilk satırı
+    //    arasında 72px). Ara bir turda bu sayılar 18/86'ya çekilmişti; sebebi
+    //    ölçüm hatasıydı — piksel taramasının eşiği düşük olduğu için kartın
+    //    kendi gölgesi de "dolu satır" sayılıyor ve blok indisleri kayıyordu.
+    //    Bir daha ölçerken eşiği yüksek tut, yoksa aynı yanlışa düşersin.
+    const ARALIK_UST = 36;
+    const ARALIK_ALT = 72;
+
+    // Punto seçimi için KABACA bir bütçe yeter, ama bilerek CÖMERT tarafta:
+    // gerçek yerleşim ölçümden sonra çıkıyor ve bu tahminden büyük olmamalı,
+    // yoksa içerik karttan taşar. Alt blokta metin-isim payı 2*ARALIK olarak
+    // alındı; gerçekte satır yüksekliği bunun bir kısmını zaten yutuyor.
+    const ustBlokTahmin = Math.max(0, tirnakH - tirnakKaydir) + ARALIK_UST + STORY.textSize * 0.2;
+    const altBlokTahmin =
+      ARALIK_ALT +
       isimBoyu * 1.2 +
       (meta ? metaBoyu * 1.3 + 6 : 0) +
       36 +                                     // puanlardan önceki boşluk
       kritBlok;
 
     // --- yorum metni: punto SABİT, sığmazsa küçülür ---
-    const enFazlaMetin = guvenliH - STORY.pad * 2 - ustBlok - altBlok;
+    const enFazlaMetin = guvenliH - STORY.pad * 2 - ustBlokTahmin - altBlokTahmin;
     const yorum = String(row["Yorum"] || "").trim();
     let punto = STORY.textSize;
     let satirlar = [];
@@ -1138,10 +1162,31 @@
       kisaltildi = true;
     }
 
-    // --- kartı şimdi çizebiliriz: yüksekliği belli ---
-    const metinH = satirlar.length * punto * STORY.lineHeight;
-    const kartH = Math.min(guvenliH, ustBlok + metinH + altBlok + STORY.pad * 2);
+    // --- yerleşim: önce 0'a göre göreli konumlar, sonra kart, sonra kaydırma ---
+    //
+    // Kartın yüksekliği içeriğe, içeriğin konumu da kartın yerine bağlı; bu
+    // döngüyü kırmak için her şey blok başlangıcı 0 kabul edilerek hesaplanıyor,
+    // kart yüksekliği çıkınca hepsi birden `ofs` kadar aşağı kaydırılıyor.
+    ctx.font = `400 ${punto}px "Nunito Sans", sans-serif`;
+    const ilkOlcu = ctx.measureText(satirlar[0] || "");
+    const sonOlcu = ctx.measureText(satirlar[satirlar.length - 1] || "");
+    ctx.font = `500 ${isimBoyu}px Fredoka, sans-serif`;
+    const isimOlcu = ctx.measureText(String(row["İsim"] || ""));
+
+    // actualBoundingBoxAscent: çizim noktasından glifin ÜST kenarına olan
+    // mesafe (yukarısı pozitif). Descent de aşağısı. İkisi de harfe göre
+    // değiştiği için aralıklar bu ölçümlerden kuruluyor.
+    const rTirnakAlt = tirnakH - tirnakKaydir;
+    const rMetinY = rTirnakAlt + ARALIK_UST + ilkOlcu.actualBoundingBoxAscent;
+    const rSonSatirY = rMetinY + (satirlar.length - 1) * punto * STORY.lineHeight;
+    const rSonAlt = rSonSatirY + sonOlcu.actualBoundingBoxDescent;
+    const rIsimY = rSonAlt + ARALIK_ALT + isimOlcu.actualBoundingBoxAscent;
+    const rMetaY = rIsimY + isimBoyu * 1.2 + 6;
+    const rKritY = rIsimY + isimBoyu * 1.2 + (meta ? metaBoyu * 1.3 + 6 : 0) + 36;
+
+    const kartH = Math.min(guvenliH, rKritY + kritBlok + STORY.pad * 2);
     const kartY = guvenliY + (guvenliH - kartH) / 2;
+    const ofs = kartY + STORY.pad;
 
     // Sitedeki panelin aynısı: zeminle AYNI renk, ayıran tek şey gölge.
     ctx.save();
@@ -1152,37 +1197,28 @@
     ctx.fill();
     ctx.restore();
 
-    // --- içerik: yukarıdan aşağı akıyor, hiçbir blok dibe yaslanmıyor ---
-    let y = kartY + STORY.pad;
-
+    // --- içerik: yukarıda hesaplanan göreli konumlar + kaydırma ---
     ctx.fillStyle = renk.copper;
     ctx.font = `500 ${tirnakBoyu}px Fredoka, sans-serif`;
-    ctx.fillText("“", icX, y - tirnakKaydir);
-    y += ustBlok;
+    ctx.fillText("“", icX, ofs - tirnakKaydir);
 
     ctx.fillStyle = renk.text;
     ctx.font = `400 ${punto}px "Nunito Sans", sans-serif`;
-    satirlar.forEach((satir) => {
-      ctx.fillText(satir, icX, y);
-      y += punto * STORY.lineHeight;
+    satirlar.forEach((satir, i) => {
+      ctx.fillText(satir, icX, ofs + rMetinY + i * punto * STORY.lineHeight);
     });
-
-    y += 44;
 
     ctx.fillStyle = renk.text;
     ctx.font = `500 ${isimBoyu}px Fredoka, sans-serif`;
-    ctx.fillText(row["İsim"], icX, y);
-    y += isimBoyu * 1.2;
+    ctx.fillText(String(row["İsim"] || ""), icX, ofs + rIsimY);
 
     if (meta) {
-      y += 6;
       ctx.fillStyle = renk.muted;
       ctx.font = `400 ${metaBoyu}px "Nunito Sans", sans-serif`;
-      ctx.fillText(meta, icX, y);
-      y += metaBoyu * 1.3;
+      ctx.fillText(meta, icX, ofs + rMetaY);
     }
 
-    y += 36;
+    let y = ofs + rKritY;
 
     // Yıldızlar satırın en sağına DEĞİL, etiketin hemen sağına geliyor
     // (kullanıcı isteği: "çok uzakta"). Ama üç etiket üç farklı uzunlukta;
