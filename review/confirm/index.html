@@ -1222,20 +1222,22 @@
     // FOTOĞRAF — yönelim ne olursa olsun TEK düzen: metnin sağında, yazı
     // yanından akıyor. Fotoğrafsız yorumda hiçbir şey değişmiyor.
     //
-    // Bir ara yatay fotoğraflar ayrı ele alınıyordu (tam genişlikte, metnin
-    // altında), çünkü ilk denemede yanlarındaki sütun 2-3 kelimeye düşüyordu.
-    // Sorunun sütun genişliği olduğu ölçülünce tek düzene dönüldü: fotoğraf
-    // 350px'e sabitlenince kalan sütun 458px oluyor — dikey fotoğraftakiyle
-    // BİREBİR aynı, yani okunurluk aynı. Bedeli yatay fotoğrafın küçülmesi
-    // (613x460 yerine 350x263); kullanıcı bunu bilerek tercih etti.
+    // DİKEY fotoğraf ÜSTTE: tırnak hizasından başlıyor, metnin ilk satırları
+    // yanından akıyor. YATAY fotoğraf ALTTA: sağ alt köşede, alt kenarı İSİM
+    // satırıyla hizalı; metnin SON satırları yanından akıyor (kullanıcı isteği,
+    // ekli görselde işaretlendi).
     //
-    // 0.433 oranı bu 350px'i veriyor. Dikey fotoğrafı ETKİLEMİYOR: onun
-    // genişliğini zaten FOTO_MAX_H sınırı belirliyor (9:16 -> 349px).
+    // Yatayın ayrı ele alınmasının sebebi genişlik: aynı 350px'te bir 4:3
+    // fotoğraf 263px yüksekliğinde kalıyor ve küçük duruyordu. Alt köşede
+    // fotoğraf 452px'e çıkabiliyor çünkü yanındaki satırlar metnin sonundaki
+    // birkaç satır ve isim — puan blokları fotoğrafın ALTINDA kalıyor, onlarla
+    // çakışmıyor.
     //
     // KIRPMA YOK: fotoğraf kendi oranında duruyor, yalnızca ölçekleniyor.
-    const FOTO_ORAN = 0.433;   // kart içi genişliğe oran -> 350px
-    const FOTO_MAX_H = 620;    // yükseklik üst sınırı (uzun dikey fotoğraflar)
-    const FOTO_BOSLUK = 32;    // fotoğrafla yazı arasındaki yatay boşluk
+    const FOTO_ORAN = 0.433;         // dikey: kart içi genişliğe oran -> 350px
+    const FOTO_YATAY_ORAN = 0.56;    // yatay: -> 452px
+    const FOTO_MAX_H = 620;          // yükseklik üst sınırı (uzun dikey fotoğraflar)
+    const FOTO_BOSLUK = 32;          // fotoğrafla yazı arasındaki yatay boşluk
 
     // Fotoğraf sağda kartın kenarına, yazıdan DAHA YAKIN duruyor: sağ pay 64
     // yerine 32. Kullanıcı isteği ("biraz daha asimetrik, çapraza doğru") —
@@ -1244,9 +1246,13 @@
     const FOTO_SAG_PAY = Math.round(STORY.pad / 2);
 
     const foto = await storyFoto(row);
+    const yatayFoto = !!foto && foto.naturalWidth >= foto.naturalHeight;
 
     let fotoG = 0, fotoY = 0;
-    if (foto) {
+    if (foto && yatayFoto) {
+      fotoG = Math.round(icG * FOTO_YATAY_ORAN);
+      fotoY = Math.round(fotoG * (foto.naturalHeight / foto.naturalWidth));
+    } else if (foto) {
       fotoG = Math.round(icG * FOTO_ORAN);
       fotoY = fotoG * (foto.naturalHeight / foto.naturalWidth);
       if (fotoY > FOTO_MAX_H) {
@@ -1255,7 +1261,7 @@
       }
     }
 
-    // Dikey fotoğrafın sol kenarı; yanındaki satırlar buraya kadar uzuyor.
+    // Fotoğrafın sol kenarı; yanındaki satırlar buraya kadar uzuyor.
     const fotoX = kartX + kartG - FOTO_SAG_PAY - fotoG;
     const darG = fotoX - FOTO_BOSLUK - icX;
 
@@ -1279,24 +1285,64 @@
     let satirlar = [];
 
     // Fotoğrafın kaç satırı daralttığı puntoya bağlı, punto da satır sayısına —
-    // o yüzden ikisi aynı döngüde çözülüyor. Dikey fotoğraf blok başından
-    // başladığı için eşik metnin başlangıcına göre hesaplanıyor; `+16`
-    // fotoğrafın hemen altındaki satırın dibine yapışmaması için pay.
-    const darSatirSayisi = (p) => (foto
-      ? Math.max(0, Math.ceil((fotoY + 16 - rMetinYTahmin) / (p * STORY.lineHeight)))
-      : 0);
-    const genislikFn = (p) => (i) => (i < darSatirSayisi(p) ? darG : icG);
+    // o yüzden ikisi aynı döngüde çözülüyor. `+16` fotoğrafın hemen yanındaki
+    // satırın kenarına yapışmaması için pay.
+    //
+    // DİKEY: fotoğraf blok başında, İLK satırlar dar.
+    // YATAY: fotoğraf isim hizasında, SON satırlar dar. Yatayda fotoğrafın
+    //   metinle çakışan kısmı yüksekliğinin tamamı değil — alt ucu isim
+    //   satırının yanında duruyor, o kadarı metnin dışında kalıyor.
+    const darSatirSayisi = (p) => {
+      if (!foto) return 0;
+      const yukseklik = yatayFoto
+        ? fotoY - (ARALIK_ALT + isimBoyu * 1.2)
+        : fotoY + 16 - rMetinYTahmin;
+      return Math.max(0, Math.ceil(yukseklik / (p * STORY.lineHeight)));
+    };
 
-    // Fotoğraf metinle yan yana durduğu için blok yüksekliğini hangisi aşağıda
-    // bitiyorsa o belirliyor: kısa bir yorumda fotoğraf metinden uzun kalıyor.
+    // Yatay fotoğrafta dar satırlar SONDA. Fotoğrafın üst kenarı metnin
+    // ALTINDAN konumlandığı için hangi satırların daralacağı toplam satır
+    // sayısına, o da sarmanın kendisine bağlı — döngüsel bir bağ.
+    //
+    // "Tahmin et, tekrar sar" yöntemi denendi ve BIRAKILDI: iki değer arasında
+    // salınıyor, üç turda oturmuyor ve gereğinden fazla satır daralıyordu
+    // (ölçüldü: 3 satır beklenirken 7 satır daraldı). Onun yerine tam sayım:
+    // olası toplam satır sayıları sırayla denenip KENDİNİ DOĞRULAYAN ilki
+    // alınıyor. Satır sayısı 25'i geçmediği için bu döngü ucuz.
+    const sarmaliBol = (p) => {
+      const lh = p * STORY.lineHeight;
+      if (!foto) return satirlaraBol(ctx, yorum, icG);
+      if (!yatayFoto) {
+        const k = darSatirSayisi(p);
+        return k === 0 ? satirlaraBol(ctx, yorum, icG)
+                       : satirlaraBol(ctx, yorum, (i) => (i < k ? darG : icG));
+      }
+      const n0 = satirlaraBol(ctx, yorum, icG).length;   // daraltma yokken
+      let son = null;
+      for (let N = n0; N <= n0 + 15; N++) {
+        // N satır olsaydı fotoğrafın üst kenarı nerede olurdu?
+        const fotoUst = N * lh + ARALIK_ALT + isimBoyu * 1.2 - fotoY;
+        const s = satirlaraBol(ctx, yorum, (i) => ((i + 1) * lh > fotoUst ? darG : icG));
+        if (s.length === N) return s;                    // varsayım doğrulandı
+        son = s;
+      }
+      return son;
+    };
+
     const icerikYuksekligi = (n, p) => {
       const metinAlt = rMetinYTahmin + n * p * STORY.lineHeight;
-      return foto ? Math.max(metinAlt, fotoY) : metinAlt;
+      if (!foto) return metinAlt;
+      // Dikey: fotoğraf metinle yan yana, hangisi aşağıda biterse o belirler.
+      // Yatay: fotoğraf metnin altına taşmıyor (alt ucu isim hizasında), ama
+      // kısa bir yorumda ismi aşağı itebiliyor — o itmeyi hesaba kat.
+      return yatayFoto
+        ? metinAlt + Math.max(0, fotoY - ARALIK_ALT - isimBoyu * 1.2 - n * p * STORY.lineHeight)
+        : Math.max(metinAlt, fotoY);
     };
 
     for (; punto >= STORY.minText; punto -= 1) {
       ctx.font = `400 ${punto}px "Nunito Sans", sans-serif`;
-      satirlar = satirlaraBol(ctx, yorum, genislikFn(punto));
+      satirlar = sarmaliBol(punto);
       if (icerikYuksekligi(satirlar.length, punto) <= enFazlaIcerik) break;
     }
 
@@ -1322,7 +1368,9 @@
     const sonOlcu = ctx.measureText(satirlar[satirlar.length - 1] || "");
     // İsim ve hizmet satırı karta sığdırılıyor; sığmazsa puntoları düşüyor,
     // taban puntoda da sığmazsa sonları kırpılıyor.
-    const isimSig = sigdir(ctx, String(row["İsim"] || ""), icG,
+    // Yatay fotoğrafta İSİM fotoğrafın yanında kalıyor, o yüzden ona dar sütun
+    // veriliyor. Hizmet satırı fotoğrafın altında olduğu için tam genişlikte.
+    const isimSig = sigdir(ctx, String(row["İsim"] || ""), yatayFoto ? darG : icG,
       (p) => `500 ${p}px Fredoka, sans-serif`, isimBoyu, 28);
     const metaSig = meta
       ? sigdir(ctx, meta, icG, (p) => `400 ${p}px "Nunito Sans", sans-serif`, metaBoyu, 26)
@@ -1339,16 +1387,24 @@
     const rSonSatirY = rMetinY + (satirlar.length - 1) * punto * STORY.lineHeight;
     const rSonAlt = rSonSatirY + sonOlcu.actualBoundingBoxDescent;
 
-    // Fotoğraf blok başından, yani TIRNAK hizasından başlıyor — metnin ilk
-    // satırından değil. Kullanıcı isteği: fotoğraf yazıdan biraz yukarıda
+    // DİKEY fotoğraf blok başından, yani TIRNAK hizasından başlıyor — metnin
+    // ilk satırından değil. Kullanıcı isteği: fotoğraf yazıdan biraz yukarıda
     // dursun, kompozisyon köşegen okunsun.
-    const rFotoY = 0;
-    const rFotoAlt = rFotoY + fotoY;
-
-    // İsim, metnin ve fotoğrafın hangisi aşağıda bitiyorsa onun altından
-    // başlıyor: kısa bir yorumda fotoğraf metinden uzun kalıyor.
-    const rBlokAlt = foto ? Math.max(rSonAlt, rFotoAlt) : rSonAlt;
-    const rIsimY = rBlokAlt + ARALIK_ALT + isimOlcu.actualBoundingBoxAscent;
+    //
+    // YATAY fotoğraf ise sağ ALT köşede: alt kenarı isim satırının altıyla
+    // hizalı, yani metnin son satırlarının ve ismin sağında duruyor.
+    let rIsimY, rFotoY;
+    if (yatayFoto) {
+      rIsimY = rSonAlt + ARALIK_ALT + isimOlcu.actualBoundingBoxAscent;
+      rFotoY = rIsimY + isimSig.punto * 1.2 - fotoY;
+      // Kısa bir yorumda fotoğraf kartın üstünden taşabiliyor; o durumda
+      // fotoğrafı yukarı kırpmak yerine ismi aşağı itiyoruz.
+      if (rFotoY < 0) { rIsimY -= rFotoY; rFotoY = 0; }
+    } else {
+      rFotoY = 0;
+      const rBlokAlt = foto ? Math.max(rSonAlt, rFotoY + fotoY) : rSonAlt;
+      rIsimY = rBlokAlt + ARALIK_ALT + isimOlcu.actualBoundingBoxAscent;
+    }
     const rMetaY = rIsimY + isimSig.punto * 1.2 + 6;
     const rKritY = rIsimY + isimSig.punto * 1.2 + (meta ? metaSig.punto * 1.3 + 6 : 0) + 36;
 
