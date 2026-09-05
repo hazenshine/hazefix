@@ -388,6 +388,106 @@
     padding: 28px 0;
     margin: 0;
   }
+
+  /* ---- Story görseli penceresi ---- */
+
+  .story-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(20, 15, 8, 0.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 160ms ease;
+  }
+
+  .story-overlay.open { opacity: 1; pointer-events: auto; }
+
+  .story-box {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 15px;
+    box-shadow: var(--panel-shadow);
+    padding: 24px;
+    max-width: 460px;
+    width: 100%;
+    max-height: 100%;
+    overflow-y: auto;
+    text-align: center;
+  }
+
+  .story-box h2 {
+    font-family: var(--font-heading);
+    font-weight: 500;
+    font-size: 20px;
+    margin: 0 0 4px;
+  }
+
+  .story-hint { font-size: 14px; color: var(--text-muted); margin: 0 0 16px; }
+
+  /* Önizleme 9:16 oranını KORUMALI: kılavuz çizgileri yüzdeyle konumlanıyor,
+     oran bozulursa ölü bölge çizgileri yanlış yere düşer ve kılavuz yalan
+     söyler. Bu yüzden en-boy oranı burada sabitleniyor, görselin kendi
+     ölçüsüne bırakılmıyor. */
+  .story-frame {
+    position: relative;
+    aspect-ratio: 9 / 16;
+    max-height: 60vh;
+    margin: 0 auto 16px;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+  }
+
+  .story-frame img { display: block; width: 100%; height: 100%; }
+
+  /* Ölü bölgeler: üstte hesap bilgisi + ilerleme çubuğu, altta yanıt kutusu.
+     Yükseklikleri yüzde olarak yazıldı (STORY.deadTop / 1920), böylece
+     önizleme hangi boyutta gösterilirse gösterilsin doğru yerde kalıyorlar. */
+  .story-dead {
+    position: absolute;
+    left: 0;
+    right: 0;
+    background: repeating-linear-gradient(
+      -45deg,
+      rgba(156, 54, 40, 0.28) 0 6px,
+      rgba(156, 54, 40, 0.10) 6px 12px
+    );
+    pointer-events: none;
+  }
+
+  .story-dead.top { top: 0; height: 13.02%; border-bottom: 2px dashed var(--danger); }
+  .story-dead.bottom { bottom: 0; height: 13.02%; border-top: 2px dashed var(--danger); }
+  .story-frame.clean .story-dead { display: none; }
+
+  .story-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+  /* "PNG indir" bir <a>: indirme işini `download` niteliği yapıyor, düğme
+     olsaydı ayrıca JS gerekirdi. Ama bağlantı olduğu için altı çiziliyor ve
+     satır kutusu <button>'lardan farklı hesaplanıyor — yan yana dururken
+     hizaları kayıyordu. Bu kural üçünü aynı kutuya sokuyor. */
+  .story-actions a.act-btn {
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    line-height: 1.2;
+  }
+
+  .story-save { margin: 14px 0 0; font-size: 13px; }
+
+  .story-note {
+    font-size: 13px;
+    color: var(--danger);
+    margin: 12px 0 0;
+    display: none;
+  }
+  .story-note.show { display: block; }
 </style>
 </head>
 <body>
@@ -435,6 +535,34 @@
   </section>
 
 </main>
+
+<!-- Story görseli önizlemesi. Kılavuz çizgileri YALNIZCA burada görünüyor,
+     indirilen PNG'ye çizilmiyor. -->
+<div class="story-overlay" id="storyOverlay" role="dialog" aria-modal="true" aria-labelledby="storyTitle">
+  <div class="story-box">
+    <h2 id="storyTitle">Story görseli</h2>
+    <p class="story-hint">Taralı bölgeler Instagram'ın kapattığı yerler: üstte hesap adı, altta yanıt kutusu.</p>
+
+    <div class="story-frame" id="storyFrame">
+      <img id="storyImage" alt="Story görseli önizlemesi">
+      <div class="story-dead top"></div>
+      <div class="story-dead bottom"></div>
+    </div>
+
+    <div class="story-actions">
+      <a class="act-btn" id="storyDownload" download>PNG indir</a>
+      <button type="button" class="act-btn light" id="storyToggleGuides">Kılavuzu gizle</button>
+      <button type="button" class="act-btn ghost" id="storyClose">Kapat</button>
+    </div>
+
+    <!-- Telefonda `download` niteliği görseli Dosyalar'a indiriyor, Fotoğraflar'a
+         DEĞİL — story'ye koymak için galeride olması gerekiyor. Önizleme gerçek
+         bir <img> olduğu için basılı tutup kaydetmek en kısa yol. -->
+    <p class="story-hint story-save">Telefondaysan: görsele basılı tut → "Fotoğraflara Ekle".</p>
+
+    <p class="story-note" id="storyNote"></p>
+  </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -716,6 +844,18 @@
       return btn;
     });
 
+    // Story görseli yalnızca ONAYLI yorumlarda: paylaşılacak şey zaten
+    // yayına alınmış olan yorum. Bekleyen bir yorumu story'ye koymak,
+    // onaylamadan yayınlamak olurdu.
+    if (row["Onay"] && !row["Arşiv"]) {
+      const storyBtn = document.createElement("button");
+      storyBtn.type = "button";
+      storyBtn.className = "act-btn light";
+      storyBtn.textContent = "Story görseli";
+      storyBtn.addEventListener("click", () => storyAc(row, storyBtn));
+      actions.appendChild(storyBtn);
+    }
+
     actions.appendChild(rowStatus);
     card.appendChild(actions);
     return card;
@@ -785,6 +925,326 @@
 
     gosterilecek.forEach((row) => listBody.appendChild(cardFor(row)));
   }
+
+  // ---------------------------------------------------------------
+  // Story görseli
+  // ---------------------------------------------------------------
+  //
+  // Onaylı bir yorumu Instagram story'sine koyulabilecek 1080x1920 bir PNG'ye
+  // çeviriyor. Kütüphane yok, doğrudan <canvas> üzerine çiziliyor: html2canvas
+  // gibi bir araç sayfanın CSS'ini yorumlamaya çalışır, burada ise çizilecek
+  // şey zaten sayılarla tarif edilmiş durumda.
+  //
+  // ÖLÜ BÖLGELER: story tuvali 1080x1920. Üstteki 250px'te ilerleme çubuğu ve
+  // hesap adı, alttaki 250px'te yanıt kutusu duruyor — izleyicinin ekranında
+  // bunlar içeriğin üstünü örter. Kart bu yüzden yalnızca ortadaki
+  // 1080x1420'lik banda çiziliyor. Sayılar Instagram'ın yayınladığı standart
+  // güvenli alan ölçüleri; değişirse tek yerden (deadTop/deadBottom)
+  // ayarlanır, ama CSS'teki .story-dead yüzdeleri de (250/1920 = %13.02)
+  // aynı anda güncellenmeli, yoksa önizlemedeki kılavuz yalan söyler.
+  const STORY = {
+    w: 1080, h: 1920,
+    deadTop: 250, deadBottom: 250,
+    side: 72,   // kartın sağındaki/solundaki boşluk
+    pad: 64,    // kartın iç boşluğu
+    radius: 36,
+    // Yorum metni için font aralığı. Üst sınır 92 değil 130: kısa bir yorum
+    // 92'de kartın yarısını boş bırakıyordu, oysa istenen "ekranı maksimum
+    // doldur". Alt sınır 26, altına inince telefonda okunmuyor — o noktadan
+    // sonra metin kısaltılıyor (aşağıda).
+    minText: 26, maxText: 130,
+    lineHeight: 1.35,
+  };
+
+  // Renkler token'lardan okunuyor, elle yazılmıyor: palet değişirse story
+  // görseli de kendiliğinden uyar. (CLAUDE.md'deki token disiplini.)
+  function tokenRenk(ad) {
+    return getComputedStyle(document.documentElement).getPropertyValue(ad).trim();
+  }
+
+  // Yıldızın şekli de token'dan geliyor. --star-outline / --star-solid birer
+  // data-URI SVG; içindeki path verisini burada tekrar yazmak yerine
+  // çözüp çıkarıyoruz, böylece yıldız formda, panelde ve story'de TEK
+  // kaynaktan besleniyor.
+  function yildizYolu(ad) {
+    const ham = tokenRenk(ad);
+    const svg = decodeURIComponent(ham.replace(/^url\(["']?/, "").replace(/["']?\)$/, ""));
+    const m = svg.match(/ d='([^']+)'/);
+    return m ? new Path2D(m[1]) : null;
+  }
+
+  function yuvarlakDikdortgen(ctx, x, y, w, h, r) {
+    // ctx.roundRect yeni bir API; eski tarayıcılarda yok. Yorum formundaki
+    // crypto.randomUUID dersinden sonra elle çiziliyor.
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function yildizCiz(ctx, x, y, boyut, dolu, renk, yollar) {
+    const yol = dolu ? yollar.solid : yollar.outline;
+    if (!yol) return;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(boyut / 24, boyut / 24);
+    ctx.lineJoin = "round";
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = renk;
+    if (dolu) { ctx.fillStyle = renk; ctx.fill(yol); }
+    ctx.stroke(yol);
+    ctx.restore();
+  }
+
+  // Satır kırma. Ziyaretçinin kendi satır sonları korunuyor; tek bir kelime
+  // satıra sığmıyorsa (uzun bağlantı gibi) harf harf bölünüyor, yoksa
+  // kartın dışına taşardı.
+  function satirlaraBol(ctx, metin, maxG) {
+    const satirlar = [];
+    metin.split(/\r?\n/).forEach((paragraf) => {
+      const kelimeler = paragraf.split(/\s+/).filter(Boolean);
+      if (!kelimeler.length) { satirlar.push(""); return; }
+      let satir = "";
+      kelimeler.forEach((kelime) => {
+        let k = kelime;
+        while (ctx.measureText(k).width > maxG && k.length > 1) {
+          let kes = 1;
+          while (kes < k.length && ctx.measureText(k.slice(0, kes + 1)).width <= maxG) kes++;
+          if (satir) { satirlar.push(satir); satir = ""; }
+          satirlar.push(k.slice(0, kes));
+          k = k.slice(kes);
+        }
+        const deneme = satir ? `${satir} ${k}` : k;
+        if (!satir || ctx.measureText(deneme).width <= maxG) {
+          satir = deneme;
+        } else {
+          satirlar.push(satir);
+          satir = k;
+        }
+      });
+      if (satir) satirlar.push(satir);
+    });
+    return satirlar;
+  }
+
+  async function storyCiz(row) {
+    // Ölçüm fonta bağlı: yazı tipleri inmeden measureText yanlış değer verir
+    // ve metin ya taşar ya da gereksiz küçülür. Bu yüzden önce yükleniyorlar.
+    if (document.fonts) {
+      await Promise.all([
+        document.fonts.load("500 92px Fredoka"),
+        document.fonts.load("400 60px 'Nunito Sans'"),
+        document.fonts.load("600 30px 'Nunito Sans'"),
+        document.fonts.load("700 26px 'Nunito Sans'"),
+      ]).catch(() => {});
+      await document.fonts.ready;
+    }
+
+    const renk = {
+      bg: tokenRenk("--bg"),
+      panel: tokenRenk("--panel"),
+      text: tokenRenk("--text-main"),
+      muted: tokenRenk("--text-muted"),
+      copper: tokenRenk("--copper"),
+      yildiz: tokenRenk("--star-filled"),
+    };
+    const yollar = { outline: yildizYolu("--star-outline"), solid: yildizYolu("--star-solid") };
+
+    const cv = document.createElement("canvas");
+    cv.width = STORY.w;
+    cv.height = STORY.h;
+    const ctx = cv.getContext("2d");
+
+    ctx.fillStyle = renk.bg;
+    ctx.fillRect(0, 0, STORY.w, STORY.h);
+
+    // Kart tam olarak güvenli banda oturuyor: üstü deadTop'ta başlıyor,
+    // altı deadBottom'da bitiyor. İçerik böylece azami yeri kaplıyor.
+    const kartX = STORY.side;
+    const kartY = STORY.deadTop;
+    const kartG = STORY.w - STORY.side * 2;
+    const kartY2 = STORY.h - STORY.deadBottom;
+    const kartH = kartY2 - kartY;
+
+    // Sitedeki panelin aynısı: zeminle AYNI renk, ayıran tek şey gölge.
+    ctx.save();
+    ctx.shadowColor = "rgba(0, 0, 0, 0.3)";
+    ctx.shadowBlur = 28;
+    ctx.fillStyle = renk.panel;
+    yuvarlakDikdortgen(ctx, kartX, kartY, kartG, kartH, STORY.radius);
+    ctx.fill();
+    ctx.restore();
+
+    const icX = kartX + STORY.pad;
+    const icG = kartG - STORY.pad * 2;
+    const icY = kartY + STORY.pad;
+    const icH = kartH - STORY.pad * 2;
+
+    // --- değişmeyen yükseklikler (yorum metni dışındaki her şey) ---
+    // Fredoka'nın tırnak glifi em kutusunun küçük bir kısmını kaplıyor;
+    // 110px'te ekranda minik kalıyordu, ölçülüp 160'a çıkarıldı.
+    const tirnakBoyu = 160;
+    const isimBoyu = 46;
+    const metaBoyu = 30;
+    const kritBoyu = 30;
+    const kritYildiz = 46;
+    const kritSatirH = 58;
+    const kritAra = 16;
+    const altBilgiBoyu = 26;
+
+    const meta = [row["Hizmet"], row["Cihaz Modeli"]].filter(Boolean).join(" · ");
+    const kritBlok = CRITERIA.length * kritSatirH + (CRITERIA.length - 1) * kritAra;
+
+    const sabit =
+      tirnakBoyu + 28 +                       // tırnak + altındaki boşluk
+      44 +                                    // metinden sonraki boşluk
+      isimBoyu * 1.2 +
+      (meta ? metaBoyu * 1.3 + 6 : 0) +
+      36 +                                    // puanlardan önceki boşluk
+      kritBlok +
+      36 + altBilgiBoyu * 1.2;                // alt bilgi
+
+    // --- yorum metnini kalan alana sığacak EN BÜYÜK punto ile yerleştir ---
+    const kalan = icH - sabit;
+    const yorum = String(row["Yorum"] || "").trim();
+    let punto = STORY.maxText;
+    let satirlar = [];
+    for (; punto >= STORY.minText; punto -= 1) {
+      ctx.font = `400 ${punto}px "Nunito Sans", sans-serif`;
+      satirlar = satirlaraBol(ctx, yorum, icG);
+      if (satirlar.length * punto * STORY.lineHeight <= kalan) break;
+    }
+
+    // En küçük puntoda bile sığmıyorsa kısalt. Bu bir karar: görselin taşması
+    // ya da yazının okunmaz hale gelmesi yerine metin kesiliyor, ve panelde
+    // kullanıcıya bunun olduğu SÖYLENİYOR (storyNote).
+    let kisaltildi = false;
+    if (satirlar.length * punto * STORY.lineHeight > kalan) {
+      const sigan = Math.max(1, Math.floor(kalan / (punto * STORY.lineHeight)));
+      satirlar = satirlar.slice(0, sigan);
+      satirlar[satirlar.length - 1] = satirlar[satirlar.length - 1].replace(/\s*\S*$/, "") + "…";
+      kisaltildi = true;
+    }
+
+    // --- çizim ---
+    let y = icY;
+
+    ctx.textBaseline = "top";
+    ctx.fillStyle = renk.copper;
+    ctx.font = `500 ${tirnakBoyu}px Fredoka, sans-serif`;
+    ctx.fillText("“", icX, y - tirnakBoyu * 0.18);
+    y += tirnakBoyu + 28;
+
+    // Satır sayısı tam sayı olduğu için seçilen punto kalan alanı hiçbir zaman
+    // tam doldurmuyor; artan boşluk metnin ALTINDA birikirse isimle arasında
+    // sebepsiz bir delik gibi duruyor. Blok kendi alanında ortalanıyor.
+    const metinH = satirlar.length * punto * STORY.lineHeight;
+    y += Math.max(0, (kalan - metinH) / 2);
+
+    ctx.fillStyle = renk.text;
+    ctx.font = `400 ${punto}px "Nunito Sans", sans-serif`;
+    satirlar.forEach((satir) => {
+      ctx.fillText(satir, icX, y);
+      y += punto * STORY.lineHeight;
+    });
+
+    y = icY + icH - (altBilgiBoyu * 1.2) - 36 - kritBlok - 36
+        - (meta ? metaBoyu * 1.3 + 6 : 0) - isimBoyu * 1.2;
+
+    ctx.fillStyle = renk.text;
+    ctx.font = `500 ${isimBoyu}px Fredoka, sans-serif`;
+    ctx.fillText(row["İsim"], icX, y);
+    y += isimBoyu * 1.2;
+
+    if (meta) {
+      y += 6;
+      ctx.fillStyle = renk.muted;
+      ctx.font = `400 ${metaBoyu}px "Nunito Sans", sans-serif`;
+      ctx.fillText(meta, icX, y);
+      y += metaBoyu * 1.3;
+    }
+
+    y += 36;
+    CRITERIA.forEach(({ column, label }) => {
+      ctx.fillStyle = renk.muted;
+      ctx.font = `600 ${kritBoyu}px "Nunito Sans", sans-serif`;
+      ctx.fillText(label, icX, y + (kritSatirH - kritBoyu) / 2 - 2);
+
+      const puan = Number(row[column]) || 0;
+      const yildizAra = 8;
+      const yildizTop = kritYildiz * 5 + yildizAra * 4;
+      let sx = icX + icG - yildizTop;
+      for (let i = 1; i <= 5; i++) {
+        yildizCiz(ctx, sx, y + (kritSatirH - kritYildiz) / 2, kritYildiz, i <= puan, renk.yildiz, yollar);
+        sx += kritYildiz + yildizAra;
+      }
+      y += kritSatirH + kritAra;
+    });
+
+    ctx.fillStyle = renk.muted;
+    ctx.font = `700 ${altBilgiBoyu}px "Nunito Sans", sans-serif`;
+    ctx.fillText("hazefix.org", icX, icY + icH - altBilgiBoyu * 1.2);
+
+    return { canvas: cv, kisaltildi };
+  }
+
+  const storyOverlay = document.getElementById("storyOverlay");
+  const storyFrame = document.getElementById("storyFrame");
+  const storyImage = document.getElementById("storyImage");
+  const storyDownload = document.getElementById("storyDownload");
+  const storyNote = document.getElementById("storyNote");
+  const storyToggleGuides = document.getElementById("storyToggleGuides");
+  let storyUrl = null;
+
+  function storyKapat() {
+    storyOverlay.classList.remove("open");
+    // Bellekte tutulan görseli bırak: 1080x1920 PNG'ler birikirse sekme şişer.
+    if (storyUrl) { URL.revokeObjectURL(storyUrl); storyUrl = null; }
+  }
+
+  async function storyAc(row, btn) {
+    const eskiMetin = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Hazırlanıyor…";
+    try {
+      const { canvas, kisaltildi } = await storyCiz(row);
+      const blob = await new Promise((ok) => canvas.toBlob(ok, "image/png"));
+      if (storyUrl) URL.revokeObjectURL(storyUrl);
+      storyUrl = URL.createObjectURL(blob);
+
+      storyImage.src = storyUrl;
+      storyImage.alt = `${row["İsim"]} yorumunun story görseli`;
+      storyDownload.href = storyUrl;
+      storyDownload.download = `hazefix-story-${String(row["İsim"]).replace(/[^\p{L}\p{N}]+/gu, "-").toLowerCase()}.png`;
+
+      storyNote.classList.toggle("show", kisaltildi);
+      storyNote.textContent = kisaltildi
+        ? "Yorum çok uzun olduğu için görselde kısaltıldı. Tamamı panelde duruyor."
+        : "";
+
+      storyOverlay.classList.add("open");
+    } catch (err) {
+      console.error(err);
+      alert("Story görseli hazırlanamadı. Sayfayı yenileyip tekrar deneyiniz.");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = eskiMetin;
+    }
+  }
+
+  storyToggleGuides.addEventListener("click", () => {
+    const gizli = storyFrame.classList.toggle("clean");
+    storyToggleGuides.textContent = gizli ? "Kılavuzu göster" : "Kılavuzu gizle";
+  });
+
+  document.getElementById("storyClose").addEventListener("click", storyKapat);
+  storyOverlay.addEventListener("click", (e) => { if (e.target === storyOverlay) storyKapat(); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && storyOverlay.classList.contains("open")) storyKapat();
+  });
 
   // Oturum tarayıcıda saklanıyor (supabase-js varsayılanı), yani sekme
   // kapatılıp açılınca tekrar parola sorulmuyor. Sayfa açılışında hangi
