@@ -1198,32 +1198,58 @@
     // gerçek yerleşim ölçümden sonra çıkıyor ve bu tahminden büyük olmamalı,
     // yoksa içerik karttan taşar. Alt blokta metin-isim payı 2*ARALIK olarak
     // alındı; gerçekte satır yüksekliği bunun bir kısmını zaten yutuyor.
-    // Ziyaretçinin eklediği fotoğraf metnin SAĞINDA duruyor, yazı da onun
-    // yanından akıyor (kullanıcı isteği, 2026-09-05). Önce metnin altında,
-    // solda duruyordu; sağındaki kocaman boşluk ölü alan oluyordu.
-    // Fotoğrafsız yorumda hiçbir şey değişmiyor.
+    // FOTOĞRAF — yönelime göre İKİ AYRI düzen. Fotoğrafsız yorumda hiçbir şey
+    // değişmiyor.
     //
-    // Boyut: kart içi genişliğin %46'sı. Yükseklik oranından geliyor ama
-    // FOTO_MAX_H ile sınırlı — telefon fotoğrafları 9:16 gelebiliyor ve
-    // sınırsız bırakılsa kartı tek başına dolduruyor.
+    // DİKEY fotoğraf: metnin sağında, yazı yanından akıyor. Dar ve uzun olduğu
+    // için yanında kalan sütun rahat okunuyor.
+    //
+    // YATAY fotoğraf: tam genişlikte, metnin ALTINDA. Sarmalı denendi ve
+    // bırakıldı (kullanıcı: "yatayda hâlâ sorun var"): geniş ama kısa bir
+    // fotoğrafın yanında metin sütunu 2-3 kelimeye düşüyor, birkaç satır
+    // boyunca okunaksız bir şerit oluşturuyordu. Tam genişlik hem o şeridi
+    // ortadan kaldırıyor hem yanında ölü alan bırakmıyor.
     //
     // KIRPMA YOK: fotoğraf kendi oranında duruyor, yalnızca ölçekleniyor.
-    // "Cihazın yarısı kesilmiş" sorunu bu yüzden hiç doğmuyor.
-    const FOTO_ORAN = 0.46;
-    const FOTO_MAX_H = 620;
-    const FOTO_BOSLUK = 32;   // fotoğrafla yazı arasındaki yatay boşluk
+    const FOTO_ORAN = 0.46;         // dikey fotoğrafın kart içi genişliğe oranı
+    const FOTO_MAX_H = 620;         // dikey fotoğrafta üst sınır
+    const FOTO_BOSLUK = 32;         // fotoğrafla yazı arasındaki yatay boşluk
+    const FOTO_ALT_ARALIK = 48;     // yatay fotoğrafın metinle arasındaki boşluk
+    // Yatay fotoğrafta yükseklik sınırı: tam genişlikte bir 4:3 fotoğraf 606px
+    // yer kaplıyor ve metni belirgin şekilde küçültüyordu. Sınıra takılan
+    // fotoğraf tam genişliğe ulaşamıyor, o yüzden ORTALANIYOR — sola yaslansa
+    // sağında tek yanlı bir boşluk kalır ve ölü alan gibi durur.
+    const FOTO_YATAY_MAX_H = 460;
+
+    // Fotoğraf sağda kartın kenarına, yazıdan DAHA YAKIN duruyor: sağ pay 64
+    // yerine 32. Kullanıcı isteği ("biraz daha asimetrik, çapraza doğru") —
+    // yazı sol payda, fotoğraf sağda kenara yaslı ve metinden yukarıda
+    // başlıyor; kompozisyon simetrik bir ızgara yerine köşegen okunuyor.
+    const FOTO_SAG_PAY = Math.round(STORY.pad / 2);
+
     const foto = await storyFoto(row);
+    const fotoAkisli = !!foto && foto.naturalHeight > foto.naturalWidth;
 
     let fotoG = 0, fotoY = 0;
-    if (foto) {
+    if (foto && fotoAkisli) {
       fotoG = Math.round(icG * FOTO_ORAN);
       fotoY = fotoG * (foto.naturalHeight / foto.naturalWidth);
       if (fotoY > FOTO_MAX_H) {
         fotoY = FOTO_MAX_H;
         fotoG = Math.round(FOTO_MAX_H * (foto.naturalWidth / foto.naturalHeight));
       }
+    } else if (foto) {
+      fotoG = icG;
+      fotoY = Math.round(icG * (foto.naturalHeight / foto.naturalWidth));
+      if (fotoY > FOTO_YATAY_MAX_H) {
+        fotoY = FOTO_YATAY_MAX_H;
+        fotoG = Math.round(FOTO_YATAY_MAX_H * (foto.naturalWidth / foto.naturalHeight));
+      }
     }
-    const darG = icG - fotoG - FOTO_BOSLUK;   // fotoğrafın hizasındaki satırlar
+
+    // Dikey fotoğrafın sol kenarı; yanındaki satırlar buraya kadar uzuyor.
+    const fotoX = kartX + kartG - FOTO_SAG_PAY - fotoG;
+    const darG = fotoX - FOTO_BOSLUK - icX;
 
     const ustBlokTahmin = Math.max(0, tirnakH - tirnakKaydir) + ARALIK_UST + STORY.textSize * 0.2;
     const altBlokTahmin =
@@ -1234,35 +1260,47 @@
       kritBlok;
 
     // --- yorum metni: punto SABİT, sığmazsa küçülür ---
-    const enFazlaMetin = guvenliH - STORY.pad * 2 - ustBlokTahmin - altBlokTahmin;
+    //
+    // Bütçe artık "metne kalan yer" değil, blok başlangıcından ölçülen TOPLAM
+    // içerik yüksekliği: dikey fotoğraf metinden yukarıda başlayıp aşağıda
+    // bitebiliyor, yani metin yüksekliği tek başına yetmiyor.
+    const enFazlaIcerik = guvenliH - STORY.pad * 2 - altBlokTahmin;
+    const rMetinYTahmin = Math.max(0, tirnakH - tirnakKaydir) + ARALIK_UST;
     const yorum = String(row["Yorum"] || "").trim();
     let punto = STORY.textSize;
     let satirlar = [];
 
     // Fotoğrafın kaç satırı daralttığı puntoya bağlı, punto da satır sayısına —
-    // o yüzden ikisi aynı döngüde çözülüyor. `+16` fotoğrafın hemen altındaki
-    // satırın dibine yapışmaması için küçük bir pay.
-    const darSatirSayisi = (p) =>
-      foto ? Math.ceil((fotoY + 16) / (p * STORY.lineHeight)) : 0;
+    // o yüzden ikisi aynı döngüde çözülüyor. Dikey fotoğraf blok başından
+    // başladığı için eşik metnin başlangıcına göre hesaplanıyor; `+16`
+    // fotoğrafın hemen altındaki satırın dibine yapışmaması için pay.
+    const darSatirSayisi = (p) => (fotoAkisli
+      ? Math.max(0, Math.ceil((fotoY + 16 - rMetinYTahmin) / (p * STORY.lineHeight)))
+      : 0);
     const genislikFn = (p) => (i) => (i < darSatirSayisi(p) ? darG : icG);
 
-    // Metin bloğunun yüksekliği, metin ile fotoğrafın BÜYÜĞÜ: kısa bir yorumda
-    // fotoğraf metinden aşağı taşıyor ve isim onun altından başlamalı.
-    const blokYuksekligi = (n, p) =>
-      Math.max(n * p * STORY.lineHeight, foto ? fotoY : 0);
+    const icerikYuksekligi = (n, p) => {
+      const metinAlt = rMetinYTahmin + n * p * STORY.lineHeight;
+      if (!foto) return metinAlt;
+      // Dikey: fotoğraf metinle yan yana, hangisi aşağıda biterse o belirler.
+      // Yatay: fotoğraf metnin altında, ikisi toplanıyor.
+      return fotoAkisli ? Math.max(metinAlt, fotoY) : metinAlt + FOTO_ALT_ARALIK + fotoY;
+    };
 
     for (; punto >= STORY.minText; punto -= 1) {
       ctx.font = `400 ${punto}px "Nunito Sans", sans-serif`;
       satirlar = satirlaraBol(ctx, yorum, genislikFn(punto));
-      if (blokYuksekligi(satirlar.length, punto) <= enFazlaMetin) break;
+      if (icerikYuksekligi(satirlar.length, punto) <= enFazlaIcerik) break;
     }
 
     // En küçük puntoda bile sığmıyorsa kısalt. Bu bir karar: görselin taşması
     // ya da yazının okunmaz hale gelmesi yerine metin kesiliyor, ve panelde
     // kullanıcıya bunun olduğu SÖYLENİYOR (storyNote).
     let kisaltildi = false;
-    if (blokYuksekligi(satirlar.length, punto) > enFazlaMetin) {
-      const sigan = Math.max(1, Math.floor(enFazlaMetin / (punto * STORY.lineHeight)));
+    if (icerikYuksekligi(satirlar.length, punto) > enFazlaIcerik) {
+      const metneKalan = enFazlaIcerik - rMetinYTahmin
+        - (foto && !fotoAkisli ? FOTO_ALT_ARALIK + fotoY : 0);
+      const sigan = Math.max(1, Math.floor(metneKalan / (punto * STORY.lineHeight)));
       satirlar = satirlar.slice(0, sigan);
       satirlar[satirlar.length - 1] = satirlar[satirlar.length - 1].replace(/\s*\S*$/, "") + "…";
       kisaltildi = true;
@@ -1287,14 +1325,14 @@
     const rSonSatirY = rMetinY + (satirlar.length - 1) * punto * STORY.lineHeight;
     const rSonAlt = rSonSatirY + sonOlcu.actualBoundingBoxDescent;
 
-    // Fotoğrafın üst kenarı ilk satırın MÜREKKEP üstüyle hizalı — çizim
-    // noktasıyla değil. Aksi halde fotoğraf yazıdan birkaç piksel yukarıda
-    // başlıyor ve hiza bozuk görünüyor.
-    const rFotoY = rMetinY - ilkOlcu.actualBoundingBoxAscent;
+    // Dikey fotoğraf blok başından, yani TIRNAK hizasından başlıyor — metnin
+    // ilk satırından değil. Kullanıcı isteği: fotoğraf yazıdan biraz yukarıda
+    // dursun, kompozisyon köşegen okunsun. Yatay fotoğraf ise metnin altında.
+    const rFotoY = fotoAkisli ? 0 : rSonAlt + FOTO_ALT_ARALIK;
     const rFotoAlt = rFotoY + fotoY;
 
     // İsim, metnin ve fotoğrafın hangisi aşağıda bitiyorsa onun altından
-    // başlıyor: kısa bir yorumda fotoğraf metinden uzun kalıyor.
+    // başlıyor: kısa bir yorumda dikey fotoğraf metinden uzun kalıyor.
     const rBlokAlt = foto ? Math.max(rSonAlt, rFotoAlt) : rSonAlt;
     const rIsimY = rBlokAlt + ARALIK_ALT + isimOlcu.actualBoundingBoxAscent;
     const rMetaY = rIsimY + isimBoyu * 1.2 + 6;
@@ -1328,7 +1366,7 @@
     // yuvarlatılıyor. clip() save/restore arasında — aksi halde kırpma alanı
     // bundan sonraki her çizimde de geçerli kalır ve isim/puanlar görünmezdi.
     if (foto) {
-      const fx = icX + icG - fotoG;
+      const fx = fotoAkisli ? fotoX : icX + (icG - fotoG) / 2;
       ctx.save();
       yuvarlakDikdortgen(ctx, fx, ofs + rFotoY, fotoG, fotoY, 20);
       ctx.clip();
