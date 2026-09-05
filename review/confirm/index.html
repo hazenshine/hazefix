@@ -1088,8 +1088,11 @@
     // 110px'te ekranda minik kalıyordu, ölçülüp 160'a çıkarıldı.
     const tirnakBoyu = 160;
     const isimBoyu = 46;
-    const metaBoyu = 30;
-    const kritBoyu = 30;
+    // Hizmet satırı ve kriter etiketleri 30'dan 36'ya çıktı (kullanıcı isteği:
+    // "ufak yazıyor"). İsmin ALTINDA kalmaları şart — 46'ya yaklaştırılmadı,
+    // yoksa isim satırı öne çıkan başlık olmaktan çıkar.
+    const metaBoyu = 38;
+    const kritBoyu = 38;
     const kritYildiz = 46;
     const kritSatirH = 58;
     const kritAra = 16;
@@ -1170,6 +1173,17 @@
     }
 
     y += 36;
+
+    // Yıldızlar satırın en sağına DEĞİL, etiketin hemen sağına geliyor
+    // (kullanıcı isteği: "çok uzakta"). Ama üç etiket üç farklı uzunlukta;
+    // her birinin bittiği yerden başlatsaydık yıldız grupları üç ayrı
+    // hizada durur, satırlar dağınık görünürdü. Bu yüzden başlangıç noktası
+    // EN UZUN etikete göre bir kez hesaplanıyor: hem etiketin yanındalar
+    // hem de üçü aynı hizada.
+    ctx.font = `600 ${kritBoyu}px "Nunito Sans", sans-serif`;
+    const enUzunEtiket = Math.max(...CRITERIA.map(({ label }) => ctx.measureText(label).width));
+    const yildizBasi = icX + enUzunEtiket + 40;
+
     CRITERIA.forEach(({ column, label }) => {
       ctx.fillStyle = renk.muted;
       ctx.font = `600 ${kritBoyu}px "Nunito Sans", sans-serif`;
@@ -1177,8 +1191,7 @@
 
       const puan = Number(row[column]) || 0;
       const yildizAra = 8;
-      const yildizTop = kritYildiz * 5 + yildizAra * 4;
-      let sx = icX + icG - yildizTop;
+      let sx = yildizBasi;
       for (let i = 1; i <= 5; i++) {
         yildizCiz(ctx, sx, y + (kritSatirH - kritYildiz) / 2, kritYildiz, i <= puan, renk.yildiz, yollar);
         sx += kritYildiz + yildizAra;
