@@ -951,22 +951,31 @@
   // ŞEY ÖRTMÜYOR — telefon 9:16'dan uzun olduğu için görsel siyah şeritler
   // arasında duruyor ve yanıt kutusu o şeride düşüyor.
   //
-  // Yine de sıfır yazılmadı: 16:9 (eski) bir telefonda görsel ekranı tam
-  // dolduruyor ve yanıt kutusu içeriğin üstüne biniyor. Alttaki pay o
-  // telefonlar için; ölçülen 0 ile eski telefonlardaki ~200 arasında bilinçli
-  // bir orta yol. Üstteki de ölçülen 130'un üzerine küçük bir emniyet payı.
+  // deadTop ölçülen değerin TA KENDİSİ (130), üzerine emniyet payı eklenmiyor:
+  // bu sayı artık "boşluğun nerede başladığı", yani ortalamanın referansı.
+  // Nefes payını ayrı bir sabit (KART_MIN_PAY) veriyor. 150 yazıldığında
+  // görünen üst boşluk alttakinden 18px fazla çıkıyordu — ölçüldü.
   //
-  // İKİSİ EŞİT OLMALI (kullanıcı isteği, 2026-09-05): kart bandın ortasında
-  // durduğu için ölü bölgeler farklı olduğunda kartın üstündeki ve altındaki
-  // boşluk da farklı çıkıyor — gerçek bir story'de göze çarpıyor. Bir tur
-  // 150/130 denendi ve üstteki boşluk 20px fazla göründü. Eşitlenince kart
-  // tuvalin de tam ortasına oturuyor (merkez 960).
+  // deadBottom SIFIR ve bu bilinçli. Ölçüm bunu söylüyor: telefon 9:16'dan uzun
+  // olduğu için görsel siyah şeritler arasında duruyor ve yanıt kutusu o şeride
+  // düşüyor — görselin altını hiçbir şey kapatmıyor.
   //
-  // Bu sayılar değişirse önizlemedeki kılavuzun da değişmesi gerekiyor — o iş
-  // artık ELLE YAPILMIYOR, aşağıda JS bu değerlerden hesaplıyor.
+  // KART GÖRÜNEN ALANIN ORTASINA yerleşiyor, tuvalin ortasına değil (kullanıcı
+  // isteği). Aradaki fark şu: üstteki boşluğun 130px'ini hesap adı çubuğu zaten
+  // yiyor, alttakini hiçbir şey yemiyor. Tuvale göre ortalanan kart bu yüzden
+  // ekranda "yukarıda sıkışmış, altta bol" görünüyor. Ölçüldü (gerçek story):
+  // görselin kenarına göre üst 204 / alt 165 iken, GÖZLE görünen üst 73 / alt
+  // 165'ti. deadTop'ı boşluğun başlangıcı saymak bunu kendiliğinden düzeltiyor.
+  //
+  // BEDELİ: 16:9 (eski) bir telefonda görsel ekranı tam doldurur ve yanıt
+  // kutusu kartın altına biner. Kullanıcı kendi telefonunda ölçüp bu düzeni
+  // seçti; şikâyet gelirse ilk bakılacak yer burası.
+  //
+  // Bu sayılar değişirse önizlemedeki kılavuz da değişmeli — o iş ELLE
+  // YAPILMIYOR, aşağıda JS bu değerlerden hesaplıyor.
   const STORY = {
     w: 1080, h: 1920,
-    deadTop: 150, deadBottom: 150,
+    deadTop: 130, deadBottom: 0,
     side: 72,   // kartın sağındaki/solundaki boşluk
     pad: 64,    // kartın iç boşluğu
     radius: 36,
@@ -1170,6 +1179,14 @@
     const guvenliY = STORY.deadTop;
     const guvenliH = STORY.h - STORY.deadTop - STORY.deadBottom;
 
+    // Kart bu bandın ORTASINA yerleşiyor ama bandı doldurmuyor: iki uçta en az
+    // bu kadar boşluk kalıyor. Ayrı bir sayı olmasının sebebi, ortalama ile
+    // azami boyun farklı sorular olması — deadBottom 0'a inince band 1770'e
+    // çıktı ve uzun yorumda kart görselin kenarına dayandı (ölçüldü: üstte
+    // 11px, altta 1px kalmıştı).
+    const KART_MIN_PAY = 70;
+    const kartEnFazlaH = guvenliH - KART_MIN_PAY * 2;
+
     const tirnakBoyu = 160;
     const isimBoyu = 46;
     // Hizmet satırı ve kriter etiketleri 30'dan büyütüldü (kullanıcı isteği:
@@ -1299,7 +1316,7 @@
     // Bütçe artık "metne kalan yer" değil, blok başlangıcından ölçülen TOPLAM
     // içerik yüksekliği: dikey fotoğraf metinden yukarıda başlayıp aşağıda
     // bitebiliyor, yani metin yüksekliği tek başına yetmiyor.
-    const enFazlaIcerik = guvenliH - STORY.pad * 2 - altBlokTahmin;
+    const enFazlaIcerik = kartEnFazlaH - STORY.pad * 2 - altBlokTahmin;
     const rMetinYTahmin = Math.max(0, tirnakH - tirnakKaydir) + ARALIK_UST;
     const yorum = String(row["Yorum"] || "").trim();
     let punto = STORY.textSize;
@@ -1429,7 +1446,7 @@
     const rMetaY = rIsimY + isimSig.punto * 1.2 + 6;
     const rKritY = rIsimY + isimSig.punto * 1.2 + (meta ? metaSig.punto * 1.3 + 6 : 0) + 36;
 
-    const kartH = Math.min(guvenliH, rKritY + kritBlok + STORY.pad * 2);
+    const kartH = Math.min(kartEnFazlaH, rKritY + kritBlok + STORY.pad * 2);
     const kartY = guvenliY + (guvenliH - kartH) / 2;
     const ofs = kartY + STORY.pad;
 
