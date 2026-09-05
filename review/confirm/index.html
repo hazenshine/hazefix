@@ -1050,6 +1050,28 @@
     return satirlar;
   }
 
+  // Yorumun fotoğrafını yükler; yoksa ya da inemezse null döner.
+  //
+  // crossOrigin="anonymous" ŞART ve src'den ÖNCE verilmeli: aksi halde canvas
+  // "kirlenmiş" sayılıyor ve toBlob güvenlik hatasıyla patlıyor, yani görsel
+  // hiç indirilemiyor. Supabase depolaması `access-control-allow-origin: *`
+  // döndürdüğü için bu çalışıyor (2026-09-05'te ölçüldü).
+  //
+  // Hata yutuluyor: fotoğraf inemezse story fotoğrafsız çıksın, düğme
+  // tamamen kırılmasın.
+  function storyFoto(row) {
+    const yol = row["Görsel Konumu"];
+    if (!yol) return Promise.resolve(null);
+    const { data } = supabaseClient.storage.from("review-images").getPublicUrl(yol);
+    return new Promise((coz) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => coz(img);
+      img.onerror = () => coz(null);
+      img.src = data.publicUrl;
+    });
+  }
+
   async function storyCiz(row) {
     // Ölçüm fonta bağlı: yazı tipleri inmeden measureText yanlış değer verir
     // ve metin ya taşar ya da gereksiz küçülür. Bu yüzden önce yükleniyorlar.
@@ -1148,9 +1170,26 @@
     // gerçek yerleşim ölçümden sonra çıkıyor ve bu tahminden büyük olmamalı,
     // yoksa içerik karttan taşar. Alt blokta metin-isim payı 2*ARALIK olarak
     // alındı; gerçekte satır yüksekliği bunun bir kısmını zaten yutuyor.
+    // Ziyaretçinin eklediği fotoğraf, yorum metni ile isim arasına giriyor
+    // (kullanıcı isteği, 2026-09-05). Fotoğrafsız yorumda bu blok hiç yok ve
+    // kart eskisi gibi çıkıyor — fotoğraf opsiyonel bir alan, çoğu yorumda
+    // olmayacak.
+    //
+    // SABİT YÜKSEKLİK, DOĞAL GENİŞLİK: yatay fotoğraf geniş, dikey fotoğraf
+    // dar çıkıyor ama ikisi de aynı yüksekliği kaplıyor. Bunun iki faydası
+    // var: (1) hiçbir fotoğraf KIRPILMIYOR, yani "cihazın yarısı kesilmiş"
+    // sorunu hiç doğmuyor; (2) kartın boyu fotoğrafın oranına göre
+    // zıplamıyor. Genişlik kart içine sığmazsa (panorama) yükseklikten
+    // kısılıyor.
+    const FOTO_H = 400;
+    const FOTO_ARALIK = 64;   // fotoğrafın üstündeki ve altındaki boşluk
+    const foto = await storyFoto(row);
+    const fotoBlok = foto ? FOTO_ARALIK * 2 + FOTO_H : 0;
+
     const ustBlokTahmin = Math.max(0, tirnakH - tirnakKaydir) + ARALIK_UST + STORY.textSize * 0.2;
     const altBlokTahmin =
       ARALIK_ALT +
+      fotoBlok +
       isimBoyu * 1.2 +
       (meta ? metaBoyu * 1.3 + 6 : 0) +
       36 +                                     // puanlardan önceki boşluk
@@ -1196,7 +1235,22 @@
     const rMetinY = rTirnakAlt + ARALIK_UST + ilkOlcu.actualBoundingBoxAscent;
     const rSonSatirY = rMetinY + (satirlar.length - 1) * punto * STORY.lineHeight;
     const rSonAlt = rSonSatirY + sonOlcu.actualBoundingBoxDescent;
-    const rIsimY = rSonAlt + ARALIK_ALT + isimOlcu.actualBoundingBoxAscent;
+
+    // Fotoğrafın ölçüsü: yükseklik sabit, genişlik oranından geliyor. Çok geniş
+    // bir fotoğraf kart içine sığmazsa yükseklikten kısılıyor — taşmaktansa
+    // küçülsün.
+    let fotoG = 0, fotoY_h = 0;
+    if (foto) {
+      fotoY_h = FOTO_H;
+      fotoG = FOTO_H * (foto.naturalWidth / foto.naturalHeight);
+      if (fotoG > icG) {
+        fotoG = icG;
+        fotoY_h = icG * (foto.naturalHeight / foto.naturalWidth);
+      }
+    }
+    const rFotoY = rSonAlt + FOTO_ARALIK;
+    const rIsimY = rSonAlt + (foto ? FOTO_ARALIK * 2 + fotoY_h : ARALIK_ALT)
+      + isimOlcu.actualBoundingBoxAscent;
     const rMetaY = rIsimY + isimBoyu * 1.2 + 6;
     const rKritY = rIsimY + isimBoyu * 1.2 + (meta ? metaBoyu * 1.3 + 6 : 0) + 36;
 
@@ -1223,6 +1277,17 @@
     satirlar.forEach((satir, i) => {
       ctx.fillText(satir, icX, ofs + rMetinY + i * punto * STORY.lineHeight);
     });
+
+    // Fotoğraf: köşeleri kartla aynı dilde yuvarlatılıyor. clip() save/restore
+    // arasında — aksi halde kırpma alanı bundan sonraki her çizimde de geçerli
+    // kalır ve isim/puanlar görünmez olurdu.
+    if (foto) {
+      ctx.save();
+      yuvarlakDikdortgen(ctx, icX, ofs + rFotoY, fotoG, fotoY_h, 20);
+      ctx.clip();
+      ctx.drawImage(foto, icX, ofs + rFotoY, fotoG, fotoY_h);
+      ctx.restore();
+    }
 
     ctx.fillStyle = renk.text;
     ctx.font = `500 ${isimBoyu}px Fredoka, sans-serif`;
