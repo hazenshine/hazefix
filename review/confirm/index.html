@@ -1104,8 +1104,11 @@
 
     // Glif ayrıca 0.18 em yukarı kaydırılarak çiziliyor (kutunun üstündeki
     // boşluğu yutmak için), o yüzden gerçek alt kenarı bu kadar yukarıda.
+    // Tırnakla metin arasındaki pay. Kutu ölçülürken ~100px'ti ve "çok fazla"
+    // bulundu, glif ölçümüne geçince 26'ya düştü ve bu kez "çok iç içe" oldu;
+    // 48 ikisinin arası.
     const tirnakKaydir = tirnakBoyu * 0.18;
-    const ustBlok = Math.max(0, tirnakH - tirnakKaydir) + 26;
+    const ustBlok = Math.max(0, tirnakH - tirnakKaydir) + 48;
     const altBlok =
       44 +                                     // metinden sonraki boşluk
       isimBoyu * 1.2 +
