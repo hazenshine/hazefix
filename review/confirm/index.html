@@ -388,6 +388,107 @@
     padding: 28px 0;
     margin: 0;
   }
+
+  /* ---- Story görseli penceresi ---- */
+
+  .story-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(20, 15, 8, 0.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 160ms ease;
+  }
+
+  .story-overlay.open { opacity: 1; pointer-events: auto; }
+
+  .story-box {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 15px;
+    box-shadow: var(--panel-shadow);
+    padding: 24px;
+    max-width: 460px;
+    width: 100%;
+    max-height: 100%;
+    overflow-y: auto;
+    text-align: center;
+  }
+
+  .story-box h2 {
+    font-family: var(--font-heading);
+    font-weight: 500;
+    font-size: 20px;
+    margin: 0 0 4px;
+  }
+
+  .story-hint { font-size: 14px; color: var(--text-muted); margin: 0 0 16px; }
+
+  /* Önizleme 9:16 oranını KORUMALI: kılavuz çizgileri yüzdeyle konumlanıyor,
+     oran bozulursa ölü bölge çizgileri yanlış yere düşer ve kılavuz yalan
+     söyler. Bu yüzden en-boy oranı burada sabitleniyor, görselin kendi
+     ölçüsüne bırakılmıyor. */
+  .story-frame {
+    position: relative;
+    aspect-ratio: 9 / 16;
+    max-height: 60vh;
+    margin: 0 auto 16px;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+  }
+
+  .story-frame img { display: block; width: 100%; height: 100%; }
+
+  /* Ölü bölgeler: üstte hesap bilgisi + ilerleme çubuğu, altta yanıt kutusu.
+     YÜKSEKLİKLERİ BURADA YAZMIYOR — JS, STORY.deadTop/deadBottom değerlerinden
+     yüzde olarak hesaplayıp basıyor. Böyle yapılmasının sebebi: sayı iki yerde
+     durursa biri güncellenip diğeri unutulur ve kılavuz yalan söyler. */
+  .story-dead {
+    position: absolute;
+    left: 0;
+    right: 0;
+    background: repeating-linear-gradient(
+      -45deg,
+      rgba(156, 54, 40, 0.28) 0 6px,
+      rgba(156, 54, 40, 0.10) 6px 12px
+    );
+    pointer-events: none;
+  }
+
+  .story-dead.top { top: 0; border-bottom: 2px dashed var(--danger); }
+  .story-dead.bottom { bottom: 0; border-top: 2px dashed var(--danger); }
+  .story-frame.clean .story-dead { display: none; }
+
+  .story-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+  /* "PNG indir" bir <a>: indirme işini `download` niteliği yapıyor, düğme
+     olsaydı ayrıca JS gerekirdi. Ama bağlantı olduğu için altı çiziliyor ve
+     satır kutusu <button>'lardan farklı hesaplanıyor — yan yana dururken
+     hizaları kayıyordu. Bu kural üçünü aynı kutuya sokuyor. */
+  .story-actions a.act-btn {
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    line-height: 1.2;
+  }
+
+  .story-save { margin: 14px 0 0; font-size: 13px; }
+
+  .story-note {
+    font-size: 13px;
+    color: var(--danger);
+    margin: 12px 0 0;
+    display: none;
+  }
+  .story-note.show { display: block; }
 </style>
 </head>
 <body>
@@ -435,6 +536,34 @@
   </section>
 
 </main>
+
+<!-- Story görseli önizlemesi. Kılavuz çizgileri YALNIZCA burada görünüyor,
+     indirilen PNG'ye çizilmiyor. -->
+<div class="story-overlay" id="storyOverlay" role="dialog" aria-modal="true" aria-labelledby="storyTitle">
+  <div class="story-box">
+    <h2 id="storyTitle">Story görseli</h2>
+    <p class="story-hint">Taralı bölgeler Instagram'ın kapattığı yerler: üstte hesap adı, altta yanıt kutusu.</p>
+
+    <div class="story-frame" id="storyFrame">
+      <img id="storyImage" alt="Story görseli önizlemesi">
+      <div class="story-dead top"></div>
+      <div class="story-dead bottom"></div>
+    </div>
+
+    <div class="story-actions">
+      <a class="act-btn" id="storyDownload" download>PNG indir</a>
+      <button type="button" class="act-btn light" id="storyToggleGuides">Kılavuzu gizle</button>
+      <button type="button" class="act-btn ghost" id="storyClose">Kapat</button>
+    </div>
+
+    <!-- Telefonda `download` niteliği görseli Dosyalar'a indiriyor, Fotoğraflar'a
+         DEĞİL — story'ye koymak için galeride olması gerekiyor. Önizleme gerçek
+         bir <img> olduğu için basılı tutup kaydetmek en kısa yol. -->
+    <p class="story-hint story-save">Telefondaysan: görsele basılı tut → "Fotoğraflara Ekle".</p>
+
+    <p class="story-note" id="storyNote"></p>
+  </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -716,6 +845,18 @@
       return btn;
     });
 
+    // Story görseli yalnızca ONAYLI yorumlarda: paylaşılacak şey zaten
+    // yayına alınmış olan yorum. Bekleyen bir yorumu story'ye koymak,
+    // onaylamadan yayınlamak olurdu.
+    if (row["Onay"] && !row["Arşiv"]) {
+      const storyBtn = document.createElement("button");
+      storyBtn.type = "button";
+      storyBtn.className = "act-btn light";
+      storyBtn.textContent = "Story görseli";
+      storyBtn.addEventListener("click", () => storyAc(row, storyBtn));
+      actions.appendChild(storyBtn);
+    }
+
     actions.appendChild(rowStatus);
     card.appendChild(actions);
     return card;
@@ -785,6 +926,666 @@
 
     gosterilecek.forEach((row) => listBody.appendChild(cardFor(row)));
   }
+
+  // ---------------------------------------------------------------
+  // Story görseli
+  // ---------------------------------------------------------------
+  //
+  // Onaylı bir yorumu Instagram story'sine koyulabilecek 1080x1920 bir PNG'ye
+  // çeviriyor. Kütüphane yok, doğrudan <canvas> üzerine çiziliyor: html2canvas
+  // gibi bir araç sayfanın CSS'ini yorumlamaya çalışır, burada ise çizilecek
+  // şey zaten sayılarla tarif edilmiş durumda.
+  //
+  // ÖLÜ BÖLGELER: story tuvali 1080x1920, üstünü Instagram'ın kendi arayüzü
+  // örtüyor. Sayılar 2026-09-05'te GERÇEK bir story'nin ekran görüntüsünden
+  // ölçüldü — önce Instagram'ın yayınladığı "250/250" genel tavsiyesi
+  // kullanılıyordu ve fazla cömertti.
+  //
+  // Ölçüm yöntemi (tekrar gerekirse): ekran görüntüsündeki iki tanıdık nokta
+  // (tırnak işaretinin üstü, son puan satırının altı) bizim görseldeki bilinen
+  // piksel konumlarıyla eşleştirilip ölçek bulundu — 0.856 çıktı ve bu
+  // 924/1080 ile birebir aynı, yani okuma doğrulandı. Sonra arayüz öğelerinin
+  // ekran konumları aynı ölçekle görsel koordinatına çevrildi.
+  //
+  // Bulunan: üstte ilerleme çubuğu + hesap adı ~130px'i örtüyor, ALTTA HİÇBİR
+  // ŞEY ÖRTMÜYOR — telefon 9:16'dan uzun olduğu için görsel siyah şeritler
+  // arasında duruyor ve yanıt kutusu o şeride düşüyor.
+  //
+  // deadTop ölçülen değerin TA KENDİSİ (130), üzerine emniyet payı eklenmiyor:
+  // bu sayı artık "boşluğun nerede başladığı", yani ortalamanın referansı.
+  // Nefes payını ayrı bir sabit (KART_MIN_PAY) veriyor. 150 yazıldığında
+  // görünen üst boşluk alttakinden 18px fazla çıkıyordu — ölçüldü.
+  //
+  // deadBottom SIFIR ve bu bilinçli. Ölçüm bunu söylüyor: telefon 9:16'dan uzun
+  // olduğu için görsel siyah şeritler arasında duruyor ve yanıt kutusu o şeride
+  // düşüyor — görselin altını hiçbir şey kapatmıyor.
+  //
+  // KART GÖRÜNEN ALANIN ORTASINA yerleşiyor, tuvalin ortasına değil (kullanıcı
+  // isteği). Aradaki fark şu: üstteki boşluğun 130px'ini hesap adı çubuğu zaten
+  // yiyor, alttakini hiçbir şey yemiyor. Tuvale göre ortalanan kart bu yüzden
+  // ekranda "yukarıda sıkışmış, altta bol" görünüyor. Ölçüldü (gerçek story):
+  // görselin kenarına göre üst 204 / alt 165 iken, GÖZLE görünen üst 73 / alt
+  // 165'ti. deadTop'ı boşluğun başlangıcı saymak bunu kendiliğinden düzeltiyor.
+  //
+  // BEDELİ: 16:9 (eski) bir telefonda görsel ekranı tam doldurur ve yanıt
+  // kutusu kartın altına biner. Kullanıcı kendi telefonunda ölçüp bu düzeni
+  // seçti; şikâyet gelirse ilk bakılacak yer burası.
+  //
+  // Bu sayılar değişirse önizlemedeki kılavuz da değişmeli — o iş ELLE
+  // YAPILMIYOR, aşağıda JS bu değerlerden hesaplıyor.
+  const STORY = {
+    w: 1080, h: 1920,
+    deadTop: 130, deadBottom: 0,
+    side: 72,   // kartın sağındaki/solundaki boşluk
+    pad: 64,    // kartın iç boşluğu
+    radius: 36,
+    // Yorum metni SABİT puntoda (kullanıcı kararı, 2026-09-05). Önceden punto
+    // kalan alana göre büyüyüp küçülüyor, kart hep aynı boyda kalıyordu; artık
+    // tersi: punto sabit, KART içeriğe göre uzayıp kısalıyor. Gerekçe kullanıcının:
+    // her story'de aynı boyda panel monoton duruyor, yorum uzunluğu değiştikçe
+    // panelin de değişmesi seriyi canlı tutuyor.
+    //
+    // minText yalnızca EMNİYET: çok uzun bir yorum sabit puntoda güvenli alana
+    // sığmazsa oraya kadar küçülüyor, sonra kısaltılıyor.
+    textSize: 54, minText: 26,
+    lineHeight: 1.35,
+  };
+
+  // Renkler token'lardan okunuyor, elle yazılmıyor: palet değişirse story
+  // görseli de kendiliğinden uyar. (CLAUDE.md'deki token disiplini.)
+  function tokenRenk(ad) {
+    return getComputedStyle(document.documentElement).getPropertyValue(ad).trim();
+  }
+
+  // Yıldızın şekli de token'dan geliyor. --star-outline / --star-solid birer
+  // data-URI SVG; içindeki path verisini burada tekrar yazmak yerine
+  // çözüp çıkarıyoruz, böylece yıldız formda, panelde ve story'de TEK
+  // kaynaktan besleniyor.
+  function yildizYolu(ad) {
+    const ham = tokenRenk(ad);
+    const svg = decodeURIComponent(ham.replace(/^url\(["']?/, "").replace(/["']?\)$/, ""));
+    const m = svg.match(/ d='([^']+)'/);
+    return m ? new Path2D(m[1]) : null;
+  }
+
+  function yuvarlakDikdortgen(ctx, x, y, w, h, r) {
+    // ctx.roundRect yeni bir API; eski tarayıcılarda yok. Yorum formundaki
+    // crypto.randomUUID dersinden sonra elle çiziliyor.
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function yildizCiz(ctx, x, y, boyut, dolu, renk, yollar) {
+    const yol = dolu ? yollar.solid : yollar.outline;
+    if (!yol) return;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(boyut / 24, boyut / 24);
+    ctx.lineJoin = "round";
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = renk;
+    if (dolu) { ctx.fillStyle = renk; ctx.fill(yol); }
+    ctx.stroke(yol);
+    ctx.restore();
+  }
+
+  // Satır kırma. Ziyaretçinin kendi satır sonları korunuyor; tek bir kelime
+  // satıra sığmıyorsa (uzun bağlantı gibi) harf harf bölünüyor, yoksa
+  // kartın dışına taşardı.
+  //
+  // `genislik` SAYI ya da FONKSİYON olabilir. Fonksiyon hâli fotoğrafın
+  // yanından akan metin için: fotoğrafın hizasındaki satırlar dar, altındakiler
+  // tam genişlikte. Genişlik her satırda yeniden soruluyor, başta bir kez
+  // değil — yoksa fotoğraf biter bitmez genişleyemezdi.
+  function satirlaraBol(ctx, metin, genislik) {
+    const gen = typeof genislik === "function" ? genislik : () => genislik;
+    const satirlar = [];
+    metin.split(/\r?\n/).forEach((paragraf) => {
+      const kelimeler = paragraf.split(/\s+/).filter(Boolean);
+      if (!kelimeler.length) { satirlar.push(""); return; }
+      let satir = "";
+      kelimeler.forEach((kelime) => {
+        let k = kelime;
+        while (k.length > 1 && ctx.measureText(k).width > gen(satirlar.length)) {
+          const maxG = gen(satirlar.length);
+          if (satir) { satirlar.push(satir); satir = ""; continue; }
+          let kes = 1;
+          while (kes < k.length && ctx.measureText(k.slice(0, kes + 1)).width <= maxG) kes++;
+          satirlar.push(k.slice(0, kes));
+          k = k.slice(kes);
+        }
+        const maxG = gen(satirlar.length);
+        const deneme = satir ? `${satir} ${k}` : k;
+        if (!satir || ctx.measureText(deneme).width <= maxG) {
+          satir = deneme;
+        } else {
+          satirlar.push(satir);
+          satir = k;
+        }
+      });
+      if (satir) satirlar.push(satir);
+    });
+    return satirlar;
+  }
+
+  // Tek satırlık bir metni verilen genişliğe sığdırır: önce puntoyu düşürerek,
+  // taban puntoda hâlâ sığmıyorsa sonunu kırparak.
+  //
+  // Gerekiyor çünkü isim 80, hizmet+model 80+ karaktere kadar çıkabiliyor ve
+  // sabit puntoda kartın dışına taşıyorlar. Ölçüldü: 45 karakterlik bir isim
+  // 46px'te sağ kenardan 34 piksel satır boyunca dışarı çıkıyordu.
+  function sigdir(ctx, metin, maxG, fontYap, basPunto, tabanPunto) {
+    let punto = basPunto;
+    for (; punto > tabanPunto; punto -= 1) {
+      ctx.font = fontYap(punto);
+      if (ctx.measureText(metin).width <= maxG) return { punto, metin };
+    }
+    ctx.font = fontYap(punto);
+    if (ctx.measureText(metin).width <= maxG) return { punto, metin };
+    let kesik = metin;
+    while (kesik.length > 1 && ctx.measureText(kesik + "…").width > maxG) {
+      kesik = kesik.slice(0, -1);
+    }
+    return { punto, metin: kesik + "…" };
+  }
+
+  // Büyük bir fotoğrafı tek adımda küçültmek bulanıklaştırıyor: tarayıcı
+  // iki-doğrusal örnekliyor, ara kademe üretmiyor. Telefon fotoğrafları
+  // 2268x4032 geliyor ve karta ~350px olarak giriyor — 6-7 katlık bir
+  // küçültme, fark bariz. Kaynak hedefin iki katından büyük olduğu sürece
+  // yarıya indiriliyor, son adımı asıl çizim yapıyor.
+  function kademeliKucult(img, hedefG) {
+    let kaynak = img, g = img.naturalWidth, y = img.naturalHeight;
+    while (g / 2 > hedefG) {
+      const c = document.createElement("canvas");
+      c.width = Math.round(g / 2);
+      c.height = Math.round(y / 2);
+      const x = c.getContext("2d");
+      x.imageSmoothingEnabled = true;
+      x.imageSmoothingQuality = "high";
+      x.drawImage(kaynak, 0, 0, c.width, c.height);
+      kaynak = c; g = c.width; y = c.height;
+    }
+    return kaynak;
+  }
+
+  // Yorumun fotoğrafını yükler; yoksa ya da inemezse null döner.
+  //
+  // crossOrigin="anonymous" ŞART ve src'den ÖNCE verilmeli: aksi halde canvas
+  // "kirlenmiş" sayılıyor ve toBlob güvenlik hatasıyla patlıyor, yani görsel
+  // hiç indirilemiyor. Supabase depolaması `access-control-allow-origin: *`
+  // döndürdüğü için bu çalışıyor (2026-09-05'te ölçüldü).
+  //
+  // Hata yutuluyor: fotoğraf inemezse story fotoğrafsız çıksın, düğme
+  // tamamen kırılmasın.
+  function storyFoto(row) {
+    const yol = row["Görsel Konumu"];
+    if (!yol) return Promise.resolve(null);
+    const { data } = supabaseClient.storage.from("review-images").getPublicUrl(yol);
+    return new Promise((coz) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => coz(img);
+      img.onerror = () => coz(null);
+      img.src = data.publicUrl;
+    });
+  }
+
+  async function storyCiz(row) {
+    // Ölçüm fonta bağlı: yazı tipleri inmeden measureText yanlış değer verir
+    // ve metin ya taşar ya da gereksiz küçülür. Bu yüzden önce yükleniyorlar.
+    if (document.fonts) {
+      await Promise.all([
+        document.fonts.load("500 92px Fredoka"),
+        document.fonts.load("400 60px 'Nunito Sans'"),
+        document.fonts.load("600 30px 'Nunito Sans'"),
+        document.fonts.load("700 26px 'Nunito Sans'"),
+      ]).catch(() => {});
+      await document.fonts.ready;
+    }
+
+    const renk = {
+      bg: tokenRenk("--bg"),
+      panel: tokenRenk("--panel"),
+      text: tokenRenk("--text-main"),
+      muted: tokenRenk("--text-muted"),
+      copper: tokenRenk("--copper"),
+      yildiz: tokenRenk("--star-filled"),
+    };
+    const yollar = { outline: yildizYolu("--star-outline"), solid: yildizYolu("--star-solid") };
+
+    const cv = document.createElement("canvas");
+    cv.width = STORY.w;
+    cv.height = STORY.h;
+    const ctx = cv.getContext("2d");
+
+    ctx.fillStyle = renk.bg;
+    ctx.fillRect(0, 0, STORY.w, STORY.h);
+
+    // Kartın genişliği sabit, YÜKSEKLİĞİ içeriğe göre. Bu yüzden önce her şey
+    // ölçülüyor, kart en son çiziliyor: yüksekliği bilmeden zemini çizemeyiz.
+    const kartX = STORY.side;
+    const kartG = STORY.w - STORY.side * 2;
+    const icX = kartX + STORY.pad;
+    const icG = kartG - STORY.pad * 2;
+
+    // Güvenli bant: ölü bölgelerin arasında kalan yer. Kart bunun içinde
+    // dikeyde ortalanıyor ve asla taşmıyor.
+    const guvenliY = STORY.deadTop;
+    const guvenliH = STORY.h - STORY.deadTop - STORY.deadBottom;
+
+    // Kart bu bandın ORTASINA yerleşiyor ama bandı doldurmuyor: iki uçta en az
+    // bu kadar boşluk kalıyor. Ayrı bir sayı olmasının sebebi, ortalama ile
+    // azami boyun farklı sorular olması — deadBottom 0'a inince band 1770'e
+    // çıktı ve uzun yorumda kart görselin kenarına dayandı (ölçüldü: üstte
+    // 11px, altta 1px kalmıştı).
+    const KART_MIN_PAY = 70;
+    const kartEnFazlaH = guvenliH - KART_MIN_PAY * 2;
+
+    const tirnakBoyu = 160;
+    const isimBoyu = 46;
+    // Hizmet satırı ve kriter etiketleri 30'dan büyütüldü (kullanıcı isteği:
+    // "ufak yazıyor"). İsmin ALTINDA kalmaları şart — 46'ya yaklaştırılmadı,
+    // yoksa isim satırı öne çıkan başlık olmaktan çıkar.
+    const metaBoyu = 38;
+    const kritBoyu = 38;
+    const kritYildiz = 46;
+    const kritSatirH = 58;
+    const kritAra = 16;
+
+    ctx.textBaseline = "top";
+
+    // Tırnak glifi 160px'lik em kutusunun yalnızca ÜST kısmını dolduruyor;
+    // kutunun geri kalanı boş piksel. Yüksekliği kutudan alırsak altında
+    // sebepsiz bir boşluk kalıyor (kullanıcı: "tırnağın altındaki boşluk çok
+    // fazla"). Bu yüzden glifin gerçek sınırı ölçülüyor; ölçüm desteklenmezse
+    // 0.45 oranına düşülüyor.
+    ctx.font = `500 ${tirnakBoyu}px Fredoka, sans-serif`;
+    const tirnakOlcu = ctx.measureText("“");
+    const tirnakH = tirnakOlcu.actualBoundingBoxDescent || tirnakBoyu * 0.45;
+
+    const meta = [row["Hizmet"], row["Cihaz Modeli"]].filter(Boolean).join(" · ");
+    const kritBlok = CRITERIA.length * kritSatirH + (CRITERIA.length - 1) * kritAra;
+
+    // Glif ayrıca 0.18 em yukarı kaydırılarak çiziliyor (kutunun üstündeki
+    // boşluğu yutmak için), o yüzden gerçek alt kenarı bu kadar yukarıda.
+    const tirnakKaydir = tirnakBoyu * 0.18;
+
+    // Tırnak↔metin ve metin↔isim aralıkları. Kullanıcı isteği (2026-09-05):
+    // üstteki, alttakinin YARISI kadar olsun — ekranda 36px'e karşı 72px.
+    //
+    // İki şey bilinçli:
+    //
+    // 1) Aralıklar satırın çizim noktasına göre değil, HARFLERİN KENARLARINA
+    //    göre kuruluyor (measureText'in actualBoundingBox ölçüleriyle). Sabit
+    //    sayı kullanıldığında aralık yoruma göre oynuyordu: son satırı
+    //    "index.html" olan bir yorumda alta sarkan harf olmadığı için boşluk
+    //    büyük, "gönderin lütfen." ile bitende küçük görünüyordu. Ölçüldü —
+    //    şimdi iki yorumda da birebir aynı.
+    //
+    // 2) Sayılar doğrudan ekrandaki piksel değerleri: 36 ve 72. Çizilen
+    //    görüntüden ölçülerek doğrulandı (tırnağın son satırı ile metnin ilk
+    //    satırı arasında 36px, metnin son satırı ile ismin ilk satırı
+    //    arasında 72px). Ara bir turda bu sayılar 18/86'ya çekilmişti; sebebi
+    //    ölçüm hatasıydı — piksel taramasının eşiği düşük olduğu için kartın
+    //    kendi gölgesi de "dolu satır" sayılıyor ve blok indisleri kayıyordu.
+    //    Bir daha ölçerken eşiği yüksek tut, yoksa aynı yanlışa düşersin.
+    const ARALIK_UST = 36;
+    const ARALIK_ALT = 72;
+
+    // Punto seçimi için KABACA bir bütçe yeter, ama bilerek CÖMERT tarafta:
+    // gerçek yerleşim ölçümden sonra çıkıyor ve bu tahminden büyük olmamalı,
+    // yoksa içerik karttan taşar. Alt blokta metin-isim payı 2*ARALIK olarak
+    // alındı; gerçekte satır yüksekliği bunun bir kısmını zaten yutuyor.
+    // FOTOĞRAF — yönelim ne olursa olsun TEK düzen: metnin sağında, yazı
+    // yanından akıyor. Fotoğrafsız yorumda hiçbir şey değişmiyor.
+    //
+    // DİKEY fotoğraf ÜSTTE: tırnak hizasından başlıyor, metnin ilk satırları
+    // yanından akıyor. YATAY fotoğraf ALTTA: sağ alt köşede, alt kenarı İSİM
+    // satırıyla hizalı; metnin SON satırları yanından akıyor (kullanıcı isteği,
+    // ekli görselde işaretlendi).
+    //
+    // Yatayın ayrı ele alınmasının sebebi genişlik: aynı 350px'te bir 4:3
+    // fotoğraf 263px yüksekliğinde kalıyor ve küçük duruyordu. Alt köşede
+    // fotoğraf 452px'e çıkabiliyor çünkü yanındaki satırlar metnin sonundaki
+    // birkaç satır ve isim — puan blokları fotoğrafın ALTINDA kalıyor, onlarla
+    // çakışmıyor.
+    //
+    // KIRPMA YOK: fotoğraf kendi oranında duruyor, yalnızca ölçekleniyor.
+    const FOTO_ORAN = 0.433;         // dikey: kart içi genişliğe oran -> 350px
+    const FOTO_YATAY_ORAN = 0.56;    // yatay: -> 452px
+    const FOTO_MAX_H = 620;          // yükseklik üst sınırı (uzun dikey fotoğraflar)
+    const FOTO_BOSLUK = 32;          // fotoğrafla yazı arasındaki yatay boşluk
+
+    // Fotoğraf sağda kartın kenarına, yazıdan DAHA YAKIN duruyor: sağ pay 64
+    // yerine 32. Kullanıcı isteği ("biraz daha asimetrik, çapraza doğru") —
+    // yazı sol payda, fotoğraf sağda kenara yaslı ve metinden yukarıda
+    // başlıyor; kompozisyon simetrik bir ızgara yerine köşegen okunuyor.
+    const FOTO_SAG_PAY = Math.round(STORY.pad / 2);
+
+    const foto = await storyFoto(row);
+    const yatayFoto = !!foto && foto.naturalWidth >= foto.naturalHeight;
+
+    let fotoG = 0, fotoY = 0;
+    if (foto && yatayFoto) {
+      fotoG = Math.round(icG * FOTO_YATAY_ORAN);
+      fotoY = Math.round(fotoG * (foto.naturalHeight / foto.naturalWidth));
+    } else if (foto) {
+      fotoG = Math.round(icG * FOTO_ORAN);
+      fotoY = fotoG * (foto.naturalHeight / foto.naturalWidth);
+      if (fotoY > FOTO_MAX_H) {
+        fotoY = FOTO_MAX_H;
+        fotoG = Math.round(FOTO_MAX_H * (foto.naturalWidth / foto.naturalHeight));
+      }
+    }
+
+    // Fotoğrafın sol kenarı; yanındaki satırlar buraya kadar uzuyor.
+    const fotoX = kartX + kartG - FOTO_SAG_PAY - fotoG;
+    const darG = fotoX - FOTO_BOSLUK - icX;
+
+    // İsim ve hizmet satırı karta sığdırılıyor; sığmazsa puntoları düşüyor,
+    // taban puntoda da sığmazsa sonları kırpılıyor. Yatay fotoğrafta İSİM
+    // fotoğrafın yanında kaldığı için dar sütuna sığdırılıyor; hizmet satırı
+    // fotoğrafın altında olduğundan tam genişlikte.
+    //
+    // Bu hesap metin sarmasından ÖNCE yapılmalı: yatay fotoğrafın dikey yeri
+    // isim satırına göre belirleniyor, yani sarma eşiği ismin nihai puntosunu
+    // bilmek zorunda. Sonraya bırakıldığında sarma 46'yı, çizim ise küçülmüş
+    // puntoyu kullanıyordu ve fotoğraf metnin üstüne biniyordu.
+    const isimSig = sigdir(ctx, String(row["İsim"] || ""), yatayFoto ? darG : icG,
+      (p) => `500 ${p}px Fredoka, sans-serif`, isimBoyu, 28);
+    const metaSig = meta
+      ? sigdir(ctx, meta, icG, (p) => `400 ${p}px "Nunito Sans", sans-serif`, metaBoyu, 26)
+      : { punto: metaBoyu, metin: "" };
+
+    const ustBlokTahmin = Math.max(0, tirnakH - tirnakKaydir) + ARALIK_UST + STORY.textSize * 0.2;
+    const altBlokTahmin =
+      ARALIK_ALT +
+      isimBoyu * 1.2 +
+      (meta ? metaBoyu * 1.3 + 6 : 0) +
+      36 +                                     // puanlardan önceki boşluk
+      kritBlok;
+
+    // --- yorum metni: punto SABİT, sığmazsa küçülür ---
+    //
+    // Bütçe artık "metne kalan yer" değil, blok başlangıcından ölçülen TOPLAM
+    // içerik yüksekliği: dikey fotoğraf metinden yukarıda başlayıp aşağıda
+    // bitebiliyor, yani metin yüksekliği tek başına yetmiyor.
+    const enFazlaIcerik = kartEnFazlaH - STORY.pad * 2 - altBlokTahmin;
+    const rMetinYTahmin = Math.max(0, tirnakH - tirnakKaydir) + ARALIK_UST;
+    const yorum = String(row["Yorum"] || "").trim();
+    let punto = STORY.textSize;
+    let satirlar = [];
+
+    // DİKEY fotoğrafta dar satırlar BAŞTA; fotoğraf blok başından başlıyor.
+    const darSatirSayisi = (p) =>
+      (foto && !yatayFoto)
+        ? Math.max(0, Math.ceil((fotoY + 16 - rMetinYTahmin) / (p * STORY.lineHeight)))
+        : 0;
+
+    // Yatay fotoğrafta fotoğrafın ALT kenarı isim satırının ORTASINA hizalı
+    // (kullanıcı isteği), yani konumu metnin bitişine bağlı; hangi satırların
+    // daralacağı da toplam satır sayısına, o da sarmanın kendisine bağlı.
+    //
+    // Eşik, ÇİZİMLE BİREBİR AYNI formülden geliyor — bu kritik. Önce sarma
+    // `isimBoyu` (46) ile, çizim ise sığdırılmış `isimSig.punto` ile
+    // hesaplanıyordu; isim küçüldüğünde fotoğraf hesaplanandan yukarı kayıp
+    // metnin ÜSTÜNE biniyordu. Aynı sebeple son satırın alta sarkan payı
+    // burada 0 sayılıyor: fotoğrafı olabileceği EN YUKARI noktaya koyar, yani
+    // gerektiğinden az değil fazla satır daraltır — güvenli yön.
+    const fotoUstMesafesi = (N, lh) =>
+      (N - 1) * lh + ARALIK_ALT + isimSig.punto / 2 - fotoY;
+
+    // Aday N (toplam satır sayısı) arttıkça fotoğraf aşağı iniyor, dolayısıyla
+    // daralan satır azalıyor ve sonuçtaki satır sayısı düşüyor. Yani aradığımız
+    // şey monoton bir eğrinin sabit noktası.
+    //
+    // GÜVENLİ YÖN ÖNEMLİ: sonuç adaydan AZ çıkarsa fotoğraf hesaplanandan
+    // yukarıda durur ve metnin üstüne biner. Bu yüzden "sonuç ≥ aday" koşulunu
+    // sağlayan EN BÜYÜK aday seçiliyor — tam sabit nokta varsa zaten odur,
+    // yoksa bir fazla satır daralır ki bu yalnızca biraz boşluk demek.
+    //
+    // Önceki sürüm sabit nokta bulunamayınca SON denemeyi döndürüyordu; o da
+    // en az daraltılmış aday olduğu için fotoğraf metnin üstüne biniyordu.
+    // "Tahmin et, tekrar sar" yöntemi de denendi, iki değer arasında salınıyor.
+    const sarmaliBol = (p) => {
+      const lh = p * STORY.lineHeight;
+      if (!foto) return satirlaraBol(ctx, yorum, icG);
+      if (!yatayFoto) {
+        const k = darSatirSayisi(p);
+        return k === 0 ? satirlaraBol(ctx, yorum, icG)
+                       : satirlaraBol(ctx, yorum, (i) => (i < k ? darG : icG));
+      }
+      const sar = (N) => satirlaraBol(ctx, yorum,
+        (i) => ((i + 1) * lh > fotoUstMesafesi(N, lh) ? darG : icG));
+      const n0 = satirlaraBol(ctx, yorum, icG).length;   // daraltma yokken
+      let secilen = sar(n0);                             // n0'da koşul hep sağlanır
+      for (let N = n0 + 1; N <= n0 + 20; N++) {
+        const s = sar(N);
+        if (s.length < N) break;
+        secilen = s;
+      }
+      return secilen;
+    };
+
+    const icerikYuksekligi = (n, p) => {
+      const metinAlt = rMetinYTahmin + n * p * STORY.lineHeight;
+      if (!foto) return metinAlt;
+      // Dikey: fotoğraf metinle yan yana, hangisi aşağıda biterse o belirler.
+      // Yatay: fotoğraf metnin altına taşmıyor (alt ucu isim hizasında), ama
+      // kısa bir yorumda ismi aşağı itebiliyor — o itmeyi hesaba kat.
+      return yatayFoto
+        ? metinAlt + Math.max(0, fotoY - ARALIK_ALT - isimBoyu * 1.2 - n * p * STORY.lineHeight)
+        : Math.max(metinAlt, fotoY);
+    };
+
+    for (; punto >= STORY.minText; punto -= 1) {
+      ctx.font = `400 ${punto}px "Nunito Sans", sans-serif`;
+      satirlar = sarmaliBol(punto);
+      if (icerikYuksekligi(satirlar.length, punto) <= enFazlaIcerik) break;
+    }
+
+    // En küçük puntoda bile sığmıyorsa kısalt. Bu bir karar: görselin taşması
+    // ya da yazının okunmaz hale gelmesi yerine metin kesiliyor, ve panelde
+    // kullanıcıya bunun olduğu SÖYLENİYOR (storyNote).
+    let kisaltildi = false;
+    if (icerikYuksekligi(satirlar.length, punto) > enFazlaIcerik) {
+      const metneKalan = enFazlaIcerik - rMetinYTahmin;
+      const sigan = Math.max(1, Math.floor(metneKalan / (punto * STORY.lineHeight)));
+      satirlar = satirlar.slice(0, sigan);
+      satirlar[satirlar.length - 1] = satirlar[satirlar.length - 1].replace(/\s*\S*$/, "") + "…";
+      kisaltildi = true;
+    }
+
+    // --- yerleşim: önce 0'a göre göreli konumlar, sonra kart, sonra kaydırma ---
+    //
+    // Kartın yüksekliği içeriğe, içeriğin konumu da kartın yerine bağlı; bu
+    // döngüyü kırmak için her şey blok başlangıcı 0 kabul edilerek hesaplanıyor,
+    // kart yüksekliği çıkınca hepsi birden `ofs` kadar aşağı kaydırılıyor.
+    ctx.font = `400 ${punto}px "Nunito Sans", sans-serif`;
+    const ilkOlcu = ctx.measureText(satirlar[0] || "");
+    const sonOlcu = ctx.measureText(satirlar[satirlar.length - 1] || "");
+
+    ctx.font = `500 ${isimSig.punto}px Fredoka, sans-serif`;
+    const isimOlcu = ctx.measureText(isimSig.metin);
+
+    // actualBoundingBoxAscent: çizim noktasından glifin ÜST kenarına olan
+    // mesafe (yukarısı pozitif). Descent de aşağısı. İkisi de harfe göre
+    // değiştiği için aralıklar bu ölçümlerden kuruluyor.
+    const rTirnakAlt = tirnakH - tirnakKaydir;
+    const rMetinY = rTirnakAlt + ARALIK_UST + ilkOlcu.actualBoundingBoxAscent;
+    const rSonSatirY = rMetinY + (satirlar.length - 1) * punto * STORY.lineHeight;
+    const rSonAlt = rSonSatirY + sonOlcu.actualBoundingBoxDescent;
+
+    // DİKEY fotoğraf blok başından, yani TIRNAK hizasından başlıyor — metnin
+    // ilk satırından değil. Kullanıcı isteği: fotoğraf yazıdan biraz yukarıda
+    // dursun, kompozisyon köşegen okunsun.
+    //
+    // YATAY fotoğraf ise sağ ALT köşede: alt kenarı isim satırının altıyla
+    // hizalı, yani metnin son satırlarının ve ismin sağında duruyor.
+    let rIsimY, rFotoY;
+    if (yatayFoto) {
+      rIsimY = rSonAlt + ARALIK_ALT + isimOlcu.actualBoundingBoxAscent;
+      // Alt kenar isim satırının ORTASINDA (kullanıcı isteği: "isim satırının
+      // ortası gibi bir hizaya denk gelsin"). Formül sarma eşiğiyle AYNI —
+      // ikisi ayrıştığında fotoğraf metnin üstüne biniyor.
+      rFotoY = rSonAlt + ARALIK_ALT + isimSig.punto / 2 - fotoY;
+      // Kısa bir yorumda fotoğraf kartın üstünden taşabiliyor; o durumda
+      // fotoğrafı yukarı kırpmak yerine ismi aşağı itiyoruz.
+      if (rFotoY < 0) { rIsimY -= rFotoY; rFotoY = 0; }
+    } else {
+      rFotoY = 0;
+      const rBlokAlt = foto ? Math.max(rSonAlt, rFotoY + fotoY) : rSonAlt;
+      rIsimY = rBlokAlt + ARALIK_ALT + isimOlcu.actualBoundingBoxAscent;
+    }
+    const rMetaY = rIsimY + isimSig.punto * 1.2 + 6;
+    const rKritY = rIsimY + isimSig.punto * 1.2 + (meta ? metaSig.punto * 1.3 + 6 : 0) + 36;
+
+    const kartH = Math.min(kartEnFazlaH, rKritY + kritBlok + STORY.pad * 2);
+    const kartY = guvenliY + (guvenliH - kartH) / 2;
+    const ofs = kartY + STORY.pad;
+
+    // Sitedeki panelin aynısı: zeminle AYNI renk, ayıran tek şey gölge.
+    ctx.save();
+    ctx.shadowColor = "rgba(0, 0, 0, 0.3)";
+    ctx.shadowBlur = 28;
+    ctx.fillStyle = renk.panel;
+    yuvarlakDikdortgen(ctx, kartX, kartY, kartG, kartH, STORY.radius);
+    ctx.fill();
+    ctx.restore();
+
+    // --- içerik: yukarıda hesaplanan göreli konumlar + kaydırma ---
+    ctx.fillStyle = renk.copper;
+    ctx.font = `500 ${tirnakBoyu}px Fredoka, sans-serif`;
+    ctx.fillText("“", icX, ofs - tirnakKaydir);
+
+    ctx.fillStyle = renk.text;
+    ctx.font = `400 ${punto}px "Nunito Sans", sans-serif`;
+    satirlar.forEach((satir, i) => {
+      ctx.fillText(satir, icX, ofs + rMetinY + i * punto * STORY.lineHeight);
+    });
+
+    // Fotoğraf SAĞA yaslı; metin solundan akıyor. Köşeleri kartla aynı dilde
+    // yuvarlatılıyor. clip() save/restore arasında — aksi halde kırpma alanı
+    // bundan sonraki her çizimde de geçerli kalır ve isim/puanlar görünmezdi.
+    if (foto) {
+      const fx = fotoX;
+      ctx.save();
+      yuvarlakDikdortgen(ctx, fx, ofs + rFotoY, fotoG, fotoY, 20);
+      ctx.clip();
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(kademeliKucult(foto, fotoG), fx, ofs + rFotoY, fotoG, fotoY);
+      ctx.restore();
+    }
+
+    ctx.fillStyle = renk.text;
+    ctx.font = `500 ${isimSig.punto}px Fredoka, sans-serif`;
+    ctx.fillText(isimSig.metin, icX, ofs + rIsimY);
+
+    if (meta) {
+      ctx.fillStyle = renk.muted;
+      ctx.font = `400 ${metaSig.punto}px "Nunito Sans", sans-serif`;
+      ctx.fillText(metaSig.metin, icX, ofs + rMetaY);
+    }
+
+    let y = ofs + rKritY;
+
+    // Yıldızlar satırın en sağına DEĞİL, etiketin hemen sağına geliyor
+    // (kullanıcı isteği: "çok uzakta"). Ama üç etiket üç farklı uzunlukta;
+    // her birinin bittiği yerden başlatsaydık yıldız grupları üç ayrı
+    // hizada durur, satırlar dağınık görünürdü. Bu yüzden başlangıç noktası
+    // EN UZUN etikete göre bir kez hesaplanıyor: hem etiketin yanındalar
+    // hem de üçü aynı hizada.
+    ctx.font = `600 ${kritBoyu}px "Nunito Sans", sans-serif`;
+    const enUzunEtiket = Math.max(...CRITERIA.map(({ label }) => ctx.measureText(label).width));
+    const yildizBasi = icX + enUzunEtiket + 40;
+
+    CRITERIA.forEach(({ column, label }) => {
+      ctx.fillStyle = renk.muted;
+      ctx.font = `600 ${kritBoyu}px "Nunito Sans", sans-serif`;
+      ctx.fillText(label, icX, y + (kritSatirH - kritBoyu) / 2 - 2);
+
+      const puan = Number(row[column]) || 0;
+      const yildizAra = 8;
+      let sx = yildizBasi;
+      for (let i = 1; i <= 5; i++) {
+        yildizCiz(ctx, sx, y + (kritSatirH - kritYildiz) / 2, kritYildiz, i <= puan, renk.yildiz, yollar);
+        sx += kritYildiz + yildizAra;
+      }
+      y += kritSatirH + kritAra;
+    });
+
+    return { canvas: cv, kisaltildi };
+  }
+
+  const storyOverlay = document.getElementById("storyOverlay");
+  const storyFrame = document.getElementById("storyFrame");
+  const storyImage = document.getElementById("storyImage");
+  const storyDownload = document.getElementById("storyDownload");
+  const storyNote = document.getElementById("storyNote");
+  const storyToggleGuides = document.getElementById("storyToggleGuides");
+  let storyUrl = null;
+
+  // Kılavuz şeritlerinin yüksekliği TEK KAYNAKTAN, STORY'den geliyor. CSS'e
+  // yüzde yazılsaydı ölü bölge sayısı değiştiğinde ikisini birden güncellemek
+  // gerekirdi ve biri unutulduğunda kılavuz sessizce yanlış yeri gösterirdi.
+  storyFrame.querySelector(".story-dead.top").style.height =
+    `${(STORY.deadTop / STORY.h) * 100}%`;
+  storyFrame.querySelector(".story-dead.bottom").style.height =
+    `${(STORY.deadBottom / STORY.h) * 100}%`;
+
+  function storyKapat() {
+    storyOverlay.classList.remove("open");
+    // Bellekte tutulan görseli bırak: 1080x1920 PNG'ler birikirse sekme şişer.
+    if (storyUrl) { URL.revokeObjectURL(storyUrl); storyUrl = null; }
+  }
+
+  async function storyAc(row, btn) {
+    const eskiMetin = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Hazırlanıyor…";
+    try {
+      const { canvas, kisaltildi } = await storyCiz(row);
+      const blob = await new Promise((ok) => canvas.toBlob(ok, "image/png"));
+      if (storyUrl) URL.revokeObjectURL(storyUrl);
+      storyUrl = URL.createObjectURL(blob);
+
+      storyImage.src = storyUrl;
+      storyImage.alt = `${row["İsim"]} yorumunun story görseli`;
+      storyDownload.href = storyUrl;
+      storyDownload.download = `hazefix-story-${String(row["İsim"]).replace(/[^\p{L}\p{N}]+/gu, "-").toLowerCase()}.png`;
+
+      storyNote.classList.toggle("show", kisaltildi);
+      storyNote.textContent = kisaltildi
+        ? "Yorum çok uzun olduğu için görselde kısaltıldı. Tamamı panelde duruyor."
+        : "";
+
+      storyOverlay.classList.add("open");
+    } catch (err) {
+      console.error(err);
+      alert("Story görseli hazırlanamadı. Sayfayı yenileyip tekrar deneyiniz.");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = eskiMetin;
+    }
+  }
+
+  storyToggleGuides.addEventListener("click", () => {
+    const gizli = storyFrame.classList.toggle("clean");
+    storyToggleGuides.textContent = gizli ? "Kılavuzu göster" : "Kılavuzu gizle";
+  });
+
+  document.getElementById("storyClose").addEventListener("click", storyKapat);
+  storyOverlay.addEventListener("click", (e) => { if (e.target === storyOverlay) storyKapat(); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && storyOverlay.classList.contains("open")) storyKapat();
+  });
 
   // Oturum tarayıcıda saklanıyor (supabase-js varsayılanı), yani sekme
   // kapatılıp açılınca tekrar parola sorulmuyor. Sayfa açılışında hangi
