@@ -609,7 +609,25 @@
   const SUPABASE_ANON_KEY = "sb_publishable_3CTlSNBvufygcUI3xqXObg_Nn039a1s";
   // ---------------------------------------------------------
 
-  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  // Bu sayfa ziyaretçi sayfası: HER ZAMAN anonim gönderim yapmalı.
+  //
+  // Onay paneli (/review/confirm/) aynı alan adında olduğu için oturumu aynı
+  // tarayıcı hafızasına, aynı anahtar altında yazıyor. Varsayılan ayarlarla
+  // form da o oturumu buluyor ve isteği `anon` yerine `authenticated`
+  // kimliğiyle gönderiyordu — o rolün ekleme yetkisi yok, gönderim
+  // "permission denied" ile patlıyordu. Yani panele giriş yapan kişi kendi
+  // formunu kırıyordu; ziyaretçiler etkilenmiyordu.
+  //
+  // Bu üç ayar formu oturumdan tamamen yalıtıyor: hafızada oturum olsa bile
+  // okumuyor. Bu alan adına eklenecek her yeni ziyaretçi sayfası da aynı
+  // ayarla açılmalı, yoksa aynı tuzak tekrar eder.
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  });
   const MAX_BYTES = 5 * 1024 * 1024;
   const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
   const RATING_LABELS = { 1: "Berbat", 2: "Kötü", 3: "Orta", 4: "İyi", 5: "Mükemmel" };
