@@ -140,6 +140,22 @@
 
   .field { margin-bottom: 24px; }
 
+  /* Üç puan kriteri tek bir grup: aralarındaki boşluk 24px'ten 12px'e indi
+     (2026-09-05, kullanıcı isteği — "birbirinden çok ayrık duruyorlar").
+     Boşluk aslında diğer alanlarla aynıydı; yıldız satırı yalnızca 30px
+     yüksekliğinde olduğu için aynı 24px orada daha büyük görünüyordu.
+
+     İkinci kural GRUBUN ALTINDAKİ boşluğu 24px'te tutuyor: son kriterden
+     sonra gelen alan (Yorum) 24px üst boşluk alıyor. Sayı 12 DEĞİL 24, çünkü
+     bitişik kenar boşlukları TOPLANMAZ, birleşir — büyük olan kazanır
+     (12 ile 24 birleşir, 24 olur). 12 yazılsaydı boşluk 12'de kalırdı;
+     denendi ve ölçüldü. Grubun üstündeki boşluğa dokunulmuyor, onu Fotoğraf
+     alanı taşıyor. Yani yalnızca grup İÇİ daraldı; grup hâlâ formun geri
+     kalanından ayrı duruyor. Dördüncü bir kriter eklenirse sadece `rating`
+     sınıfını ver, kurallar kendiliğinden işler. */
+  .field.rating { margin-bottom: 12px; }
+  .field.rating + .field:not(.rating) { margin-top: 24px; }
+
   .field-hidden { display: none; }
 
   /* Entrance only. The options list is absolutely positioned, so animating
@@ -553,7 +569,7 @@
       <p class="helper">JPG, PNG, GIF ya da WebP — 5 MB'a kadar dosya yüklemesi yapabilirsiniz.</p>
     </div>
 
-    <div class="field">
+    <div class="field rating">
       <label><span class="field-name"><span class="refdes"></span>Hizmet Kalitesi</span> <span class="req" id="serviceQualityReq">(gerekli)</span></label>
       <div class="stars" role="radiogroup" aria-label="Hizmet Kalitesi Puanı">
         <input type="radio" id="sq-star5" name="ratingServiceQuality" value="5" required aria-label="5 yıldız — Mükemmel"><label for="sq-star5" title="Mükemmel"></label>
@@ -564,7 +580,7 @@
       </div>
     </div>
 
-    <div class="field">
+    <div class="field rating">
       <label><span class="field-name"><span class="refdes"></span>Hizmet Süresi</span> <span class="req" id="serviceDurationReq">(gerekli)</span></label>
       <div class="stars" role="radiogroup" aria-label="Hizmet Süresi Puanı">
         <input type="radio" id="sd-star5" name="ratingServiceDuration" value="5" required aria-label="5 yıldız — Mükemmel"><label for="sd-star5" title="Mükemmel"></label>
@@ -575,7 +591,7 @@
       </div>
     </div>
 
-    <div class="field">
+    <div class="field rating">
       <label><span class="field-name"><span class="refdes"></span>İletişim Kalitesi</span> <span class="req" id="communicationReq">(gerekli)</span></label>
       <div class="stars" role="radiogroup" aria-label="İletişim Kalitesi Puanı">
         <input type="radio" id="cm-star5" name="ratingCommunication" value="5" required aria-label="5 yıldız — Mükemmel"><label for="cm-star5" title="Mükemmel"></label>
