@@ -104,7 +104,15 @@
      temaya göre değişecek — sabit hex yazılırsa o gün gözden kaçar. */
   .panel {
     width: 100%;
-    max-width: 560px;
+    /* Masaüstünde geniş panel — kullanıcı isteği, referans nanofix.ca/review.
+       1242px tahmin değil ölçüm: referansın kapsayıcısı 1290px üst sınırlı ve
+       iki yanında 24px boşluk var, geriye kalan görünür panel tam 1242px.
+
+       TELEFONDA HİÇBİR ŞEY DEĞİŞMEZ ve bu yüzden @media bloğu YOK: burası bir
+       ÜST sınır, dar ekranda bağlayıcı olan `width: 100%`. Panel eskiden de,
+       şimdi de ekranı doldurup body'nin 20px yan boşluğunu bırakıyor.
+       Bir @media eklemek aynı sonucu ikinci kez, kırılgan biçimde yazmak olurdu. */
+    max-width: 1242px;
     background: var(--panel);
     border: 1px solid var(--panel-edge);
     border-radius: 15px;
@@ -131,6 +139,22 @@
   }
 
   .field { margin-bottom: 24px; }
+
+  /* Üç puan kriteri tek bir grup: aralarındaki boşluk 24px'ten 12px'e indi
+     (2026-09-05, kullanıcı isteği — "birbirinden çok ayrık duruyorlar").
+     Boşluk aslında diğer alanlarla aynıydı; yıldız satırı yalnızca 30px
+     yüksekliğinde olduğu için aynı 24px orada daha büyük görünüyordu.
+
+     İkinci kural GRUBUN ALTINDAKİ boşluğu 24px'te tutuyor: son kriterden
+     sonra gelen alan (Yorum) 24px üst boşluk alıyor. Sayı 12 DEĞİL 24, çünkü
+     bitişik kenar boşlukları TOPLANMAZ, birleşir — büyük olan kazanır
+     (12 ile 24 birleşir, 24 olur). 12 yazılsaydı boşluk 12'de kalırdı;
+     denendi ve ölçüldü. Grubun üstündeki boşluğa dokunulmuyor, onu Fotoğraf
+     alanı taşıyor. Yani yalnızca grup İÇİ daraldı; grup hâlâ formun geri
+     kalanından ayrı duruyor. Dördüncü bir kriter eklenirse sadece `rating`
+     sınıfını ver, kurallar kendiliğinden işler. */
+  .field.rating { margin-bottom: 12px; }
+  .field.rating + .field:not(.rating) { margin-top: 24px; }
 
   .field-hidden { display: none; }
 
@@ -172,9 +196,6 @@
   .req { font-weight: 400; font-size: 13px; color: var(--danger); transition: opacity 150ms ease, transform 150ms ease; }
   .opt { font-weight: 400; font-size: 13px; color: var(--text-muted); }
   .req-hidden { opacity: 0; transform: scale(0.85); pointer-events: none; }
-
-  .rating-readout { transition: opacity 150ms ease, transform 150ms ease; }
-  .rating-readout.pulse { opacity: 0.3; transform: scale(0.94); }
 
   /* Dikey dolgu 11px'ten 10.5px'e indi ve YARIM PİKSEL bilerek: punto 15→16
      büyüyünce satır kutusu tam 1px uzuyor, iki yandan 0.5'er kısmak kutuyu
@@ -548,7 +569,7 @@
       <p class="helper">JPG, PNG, GIF ya da WebP — 5 MB'a kadar dosya yüklemesi yapabilirsiniz.</p>
     </div>
 
-    <div class="field">
+    <div class="field rating">
       <label><span class="field-name"><span class="refdes"></span>Hizmet Kalitesi</span> <span class="req" id="serviceQualityReq">(gerekli)</span></label>
       <div class="stars" role="radiogroup" aria-label="Hizmet Kalitesi Puanı">
         <input type="radio" id="sq-star5" name="ratingServiceQuality" value="5" required aria-label="5 yıldız — Mükemmel"><label for="sq-star5" title="Mükemmel"></label>
@@ -557,10 +578,9 @@
         <input type="radio" id="sq-star2" name="ratingServiceQuality" value="2" aria-label="2 yıldız — Kötü"><label for="sq-star2" title="Kötü"></label>
         <input type="radio" id="sq-star1" name="ratingServiceQuality" value="1" aria-label="1 yıldız — Berbat"><label for="sq-star1" title="Berbat"></label>
       </div>
-      <p class="helper rating-readout" id="serviceQualityReadout">Henüz puan seçilmedi.</p>
     </div>
 
-    <div class="field">
+    <div class="field rating">
       <label><span class="field-name"><span class="refdes"></span>Hizmet Süresi</span> <span class="req" id="serviceDurationReq">(gerekli)</span></label>
       <div class="stars" role="radiogroup" aria-label="Hizmet Süresi Puanı">
         <input type="radio" id="sd-star5" name="ratingServiceDuration" value="5" required aria-label="5 yıldız — Mükemmel"><label for="sd-star5" title="Mükemmel"></label>
@@ -569,10 +589,9 @@
         <input type="radio" id="sd-star2" name="ratingServiceDuration" value="2" aria-label="2 yıldız — Kötü"><label for="sd-star2" title="Kötü"></label>
         <input type="radio" id="sd-star1" name="ratingServiceDuration" value="1" aria-label="1 yıldız — Berbat"><label for="sd-star1" title="Berbat"></label>
       </div>
-      <p class="helper rating-readout" id="serviceDurationReadout">Henüz puan seçilmedi.</p>
     </div>
 
-    <div class="field">
+    <div class="field rating">
       <label><span class="field-name"><span class="refdes"></span>İletişim Kalitesi</span> <span class="req" id="communicationReq">(gerekli)</span></label>
       <div class="stars" role="radiogroup" aria-label="İletişim Kalitesi Puanı">
         <input type="radio" id="cm-star5" name="ratingCommunication" value="5" required aria-label="5 yıldız — Mükemmel"><label for="cm-star5" title="Mükemmel"></label>
@@ -581,7 +600,6 @@
         <input type="radio" id="cm-star2" name="ratingCommunication" value="2" aria-label="2 yıldız — Kötü"><label for="cm-star2" title="Kötü"></label>
         <input type="radio" id="cm-star1" name="ratingCommunication" value="1" aria-label="1 yıldız — Berbat"><label for="cm-star1" title="Berbat"></label>
       </div>
-      <p class="helper rating-readout" id="communicationReadout">Henüz puan seçilmedi.</p>
     </div>
 
     <div class="field">
@@ -630,7 +648,6 @@
   });
   const MAX_BYTES = 5 * 1024 * 1024;
   const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
-  const RATING_LABELS = { 1: "Berbat", 2: "Kötü", 3: "Orta", 4: "İyi", 5: "Mükemmel" };
 
   // Hem (gerekli) rozetinin görünürlüğünü hem de gönderim doğrulamasını bu iki
   // sayı belirliyor. Tek yerde durmaları şart: ayrı yazılırlarsa rozet "eksik"
@@ -815,44 +832,31 @@
     toggleReq(reviewReq, form.reviewText.value.trim().length < REVIEW_MIN);
   });
 
-  function pulseReadout(readoutEl, text) {
-    readoutEl.style.transition = "none";
-    readoutEl.classList.add("pulse");
-    readoutEl.textContent = text;
-    void readoutEl.offsetWidth;
-    readoutEl.style.transition = "";
-    readoutEl.classList.remove("pulse");
-  }
-
-  // Üç kriter aynı yıldız bileşenini paylaşıyor, yalnızca radio group adı,
-  // (gerekli) rozeti ve okunan metin farklı. Puanlar burada, `ratings`
-  // nesnesinde, kriter başına ayrı ayrı tutuluyor — gönderim de bu nesneden
-  // okunuyor.
+  // Üç kriter aynı yıldız bileşenini paylaşıyor, yalnızca radio group adı ve
+  // (gerekli) rozeti farklı. Puanlar burada, `ratings` nesnesinde, kriter
+  // başına ayrı ayrı tutuluyor — gönderim de bu nesneden okunuyor.
+  //
+  // Yıldızların ALTINDA okunan metin ("Henüz puan seçilmedi." / "4/5 — İyi")
+  // 2026-09-05'te kullanıcı isteğiyle KALDIRILDI; onu yazan `pulseReadout`,
+  // hover önizlemesi ve `RATING_LABELS` de birlikte silindi (metin gidince
+  // hepsi ölü koda dönüyordu). Puanın okunabilir karşılığı kaybolmadı:
+  // her yıldızın `title` (fare üstüne gelince) ve `aria-label` (ekran
+  // okuyucu) nitelikleri duruyor. Metin geri istenirse git geçmişinde.
   const ratings = { serviceQuality: null, serviceDuration: null, communication: null };
 
   const RATING_CRITERIA = [
-    { key: "serviceQuality", name: "ratingServiceQuality", fieldName: "Hizmet Kalitesi", reqId: "serviceQualityReq", readoutId: "serviceQualityReadout" },
-    { key: "serviceDuration", name: "ratingServiceDuration", fieldName: "Hizmet Süresi", reqId: "serviceDurationReq", readoutId: "serviceDurationReadout" },
-    { key: "communication", name: "ratingCommunication", fieldName: "İletişim Kalitesi", reqId: "communicationReq", readoutId: "communicationReadout" },
+    { key: "serviceQuality", name: "ratingServiceQuality", fieldName: "Hizmet Kalitesi", reqId: "serviceQualityReq" },
+    { key: "serviceDuration", name: "ratingServiceDuration", fieldName: "Hizmet Süresi", reqId: "serviceDurationReq" },
+    { key: "communication", name: "ratingCommunication", fieldName: "İletişim Kalitesi", reqId: "communicationReq" },
   ];
 
-  function setupStarRating({ key, name, reqId, readoutId }) {
+  function setupStarRating({ key, name, reqId }) {
     const reqBadge = document.getElementById(reqId);
-    const readout = document.getElementById(readoutId);
     const inputs = Array.from(form.querySelectorAll(`input[name="${name}"]`));
-    const container = inputs[0].closest(".stars");
-    let hasBeenSelected = false;
 
     inputs.forEach((input) => {
       input.addEventListener("change", () => {
         ratings[key] = input.value;
-        const text = `${input.value}/5 — ${RATING_LABELS[input.value]}`;
-        if (hasBeenSelected) {
-          pulseReadout(readout, text);
-        } else {
-          readout.textContent = text;
-          hasBeenSelected = true;
-        }
         toggleReq(reqBadge, false);
       });
 
@@ -869,28 +873,13 @@
           nextInput.dispatchEvent(new Event("change", { bubbles: true }));
         }
       });
-
-      const label = form.querySelector(`label[for="${input.id}"]`);
-      label.addEventListener("mouseenter", () => {
-        if (form.querySelector(`input[name="${name}"]:checked`)) return;
-        pulseReadout(readout, `${input.value}/5 — ${RATING_LABELS[input.value]}`);
-      });
-    });
-
-    container.addEventListener("mouseleave", () => {
-      if (form.querySelector(`input[name="${name}"]:checked`)) return;
-      pulseReadout(readout, "Henüz puan seçilmedi.");
     });
 
     // Browsers can restore checked radios on page reload without firing
     // change events, so sync the badge and state once on load.
     const restored = form.querySelector(`input[name="${name}"]:checked`);
     toggleReq(reqBadge, !restored);
-    if (restored) {
-      ratings[key] = restored.value;
-      readout.textContent = `${restored.value}/5 — ${RATING_LABELS[restored.value]}`;
-      hasBeenSelected = true;
-    }
+    if (restored) ratings[key] = restored.value;
   }
 
   RATING_CRITERIA.forEach(setupStarRating);
