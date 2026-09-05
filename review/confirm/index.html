@@ -952,15 +952,21 @@
   // arasında duruyor ve yanıt kutusu o şeride düşüyor.
   //
   // Yine de sıfır yazılmadı: 16:9 (eski) bir telefonda görsel ekranı tam
-  // dolduruyor ve yanıt kutusu içeriğin üstüne biniyor. 130 o telefonlar için
-  // pay; ölçülen 0 ile eski telefonlardaki ~200 arasında bilinçli bir orta yol.
-  // Üstteki 150 de ölçülen 130'un üzerine küçük bir emniyet payı.
+  // dolduruyor ve yanıt kutusu içeriğin üstüne biniyor. Alttaki pay o
+  // telefonlar için; ölçülen 0 ile eski telefonlardaki ~200 arasında bilinçli
+  // bir orta yol. Üstteki de ölçülen 130'un üzerine küçük bir emniyet payı.
+  //
+  // İKİSİ EŞİT OLMALI (kullanıcı isteği, 2026-09-05): kart bandın ortasında
+  // durduğu için ölü bölgeler farklı olduğunda kartın üstündeki ve altındaki
+  // boşluk da farklı çıkıyor — gerçek bir story'de göze çarpıyor. Bir tur
+  // 150/130 denendi ve üstteki boşluk 20px fazla göründü. Eşitlenince kart
+  // tuvalin de tam ortasına oturuyor (merkez 960).
   //
   // Bu sayılar değişirse önizlemedeki kılavuzun da değişmesi gerekiyor — o iş
   // artık ELLE YAPILMIYOR, aşağıda JS bu değerlerden hesaplıyor.
   const STORY = {
     w: 1080, h: 1920,
-    deadTop: 150, deadBottom: 130,
+    deadTop: 150, deadBottom: 150,
     side: 72,   // kartın sağındaki/solundaki boşluk
     pad: 64,    // kartın iç boşluğu
     radius: 36,
