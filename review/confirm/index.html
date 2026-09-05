@@ -448,8 +448,9 @@
   .story-frame img { display: block; width: 100%; height: 100%; }
 
   /* Ölü bölgeler: üstte hesap bilgisi + ilerleme çubuğu, altta yanıt kutusu.
-     Yükseklikleri yüzde olarak yazıldı (STORY.deadTop / 1920), böylece
-     önizleme hangi boyutta gösterilirse gösterilsin doğru yerde kalıyorlar. */
+     YÜKSEKLİKLERİ BURADA YAZMIYOR — JS, STORY.deadTop/deadBottom değerlerinden
+     yüzde olarak hesaplayıp basıyor. Böyle yapılmasının sebebi: sayı iki yerde
+     durursa biri güncellenip diğeri unutulur ve kılavuz yalan söyler. */
   .story-dead {
     position: absolute;
     left: 0;
@@ -462,8 +463,8 @@
     pointer-events: none;
   }
 
-  .story-dead.top { top: 0; height: 13.02%; border-bottom: 2px dashed var(--danger); }
-  .story-dead.bottom { bottom: 0; height: 13.02%; border-top: 2px dashed var(--danger); }
+  .story-dead.top { top: 0; border-bottom: 2px dashed var(--danger); }
+  .story-dead.bottom { bottom: 0; border-top: 2px dashed var(--danger); }
   .story-frame.clean .story-dead { display: none; }
 
   .story-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
@@ -935,16 +936,31 @@
   // gibi bir araç sayfanın CSS'ini yorumlamaya çalışır, burada ise çizilecek
   // şey zaten sayılarla tarif edilmiş durumda.
   //
-  // ÖLÜ BÖLGELER: story tuvali 1080x1920. Üstteki 250px'te ilerleme çubuğu ve
-  // hesap adı, alttaki 250px'te yanıt kutusu duruyor — izleyicinin ekranında
-  // bunlar içeriğin üstünü örter. Kart bu yüzden yalnızca ortadaki
-  // 1080x1420'lik banda çiziliyor. Sayılar Instagram'ın yayınladığı standart
-  // güvenli alan ölçüleri; değişirse tek yerden (deadTop/deadBottom)
-  // ayarlanır, ama CSS'teki .story-dead yüzdeleri de (250/1920 = %13.02)
-  // aynı anda güncellenmeli, yoksa önizlemedeki kılavuz yalan söyler.
+  // ÖLÜ BÖLGELER: story tuvali 1080x1920, üstünü Instagram'ın kendi arayüzü
+  // örtüyor. Sayılar 2026-09-05'te GERÇEK bir story'nin ekran görüntüsünden
+  // ölçüldü — önce Instagram'ın yayınladığı "250/250" genel tavsiyesi
+  // kullanılıyordu ve fazla cömertti.
+  //
+  // Ölçüm yöntemi (tekrar gerekirse): ekran görüntüsündeki iki tanıdık nokta
+  // (tırnak işaretinin üstü, son puan satırının altı) bizim görseldeki bilinen
+  // piksel konumlarıyla eşleştirilip ölçek bulundu — 0.856 çıktı ve bu
+  // 924/1080 ile birebir aynı, yani okuma doğrulandı. Sonra arayüz öğelerinin
+  // ekran konumları aynı ölçekle görsel koordinatına çevrildi.
+  //
+  // Bulunan: üstte ilerleme çubuğu + hesap adı ~130px'i örtüyor, ALTTA HİÇBİR
+  // ŞEY ÖRTMÜYOR — telefon 9:16'dan uzun olduğu için görsel siyah şeritler
+  // arasında duruyor ve yanıt kutusu o şeride düşüyor.
+  //
+  // Yine de sıfır yazılmadı: 16:9 (eski) bir telefonda görsel ekranı tam
+  // dolduruyor ve yanıt kutusu içeriğin üstüne biniyor. 130 o telefonlar için
+  // pay; ölçülen 0 ile eski telefonlardaki ~200 arasında bilinçli bir orta yol.
+  // Üstteki 150 de ölçülen 130'un üzerine küçük bir emniyet payı.
+  //
+  // Bu sayılar değişirse önizlemedeki kılavuzun da değişmesi gerekiyor — o iş
+  // artık ELLE YAPILMIYOR, aşağıda JS bu değerlerden hesaplıyor.
   const STORY = {
     w: 1080, h: 1920,
-    deadTop: 250, deadBottom: 250,
+    deadTop: 150, deadBottom: 130,
     side: 72,   // kartın sağındaki/solundaki boşluk
     pad: 64,    // kartın iç boşluğu
     radius: 36,
@@ -1255,6 +1271,14 @@
   const storyNote = document.getElementById("storyNote");
   const storyToggleGuides = document.getElementById("storyToggleGuides");
   let storyUrl = null;
+
+  // Kılavuz şeritlerinin yüksekliği TEK KAYNAKTAN, STORY'den geliyor. CSS'e
+  // yüzde yazılsaydı ölü bölge sayısı değiştiğinde ikisini birden güncellemek
+  // gerekirdi ve biri unutulduğunda kılavuz sessizce yanlış yeri gösterirdi.
+  storyFrame.querySelector(".story-dead.top").style.height =
+    `${(STORY.deadTop / STORY.h) * 100}%`;
+  storyFrame.querySelector(".story-dead.bottom").style.height =
+    `${(STORY.deadBottom / STORY.h) * 100}%`;
 
   function storyKapat() {
     storyOverlay.classList.remove("open");
