@@ -948,11 +948,15 @@
     side: 72,   // kartın sağındaki/solundaki boşluk
     pad: 64,    // kartın iç boşluğu
     radius: 36,
-    // Yorum metni için font aralığı. Üst sınır 92 değil 130: kısa bir yorum
-    // 92'de kartın yarısını boş bırakıyordu, oysa istenen "ekranı maksimum
-    // doldur". Alt sınır 26, altına inince telefonda okunmuyor — o noktadan
-    // sonra metin kısaltılıyor (aşağıda).
-    minText: 26, maxText: 130,
+    // Yorum metni SABİT puntoda (kullanıcı kararı, 2026-09-05). Önceden punto
+    // kalan alana göre büyüyüp küçülüyor, kart hep aynı boyda kalıyordu; artık
+    // tersi: punto sabit, KART içeriğe göre uzayıp kısalıyor. Gerekçe kullanıcının:
+    // her story'de aynı boyda panel monoton duruyor, yorum uzunluğu değiştikçe
+    // panelin de değişmesi seriyi canlı tutuyor.
+    //
+    // minText yalnızca EMNİYET: çok uzun bir yorum sabit puntoda güvenli alana
+    // sığmazsa oraya kadar küçülüyor, sonra kısaltılıyor.
+    textSize: 54, minText: 26,
     lineHeight: 1.35,
   };
 
@@ -1061,13 +1065,80 @@
     ctx.fillStyle = renk.bg;
     ctx.fillRect(0, 0, STORY.w, STORY.h);
 
-    // Kart tam olarak güvenli banda oturuyor: üstü deadTop'ta başlıyor,
-    // altı deadBottom'da bitiyor. İçerik böylece azami yeri kaplıyor.
+    // Kartın genişliği sabit, YÜKSEKLİĞİ içeriğe göre. Bu yüzden önce her şey
+    // ölçülüyor, kart en son çiziliyor: yüksekliği bilmeden zemini çizemeyiz.
     const kartX = STORY.side;
-    const kartY = STORY.deadTop;
     const kartG = STORY.w - STORY.side * 2;
-    const kartY2 = STORY.h - STORY.deadBottom;
-    const kartH = kartY2 - kartY;
+    const icX = kartX + STORY.pad;
+    const icG = kartG - STORY.pad * 2;
+
+    // Güvenli bant: ölü bölgelerin arasında kalan yer. Kart bunun içinde
+    // dikeyde ortalanıyor ve asla taşmıyor.
+    const guvenliY = STORY.deadTop;
+    const guvenliH = STORY.h - STORY.deadTop - STORY.deadBottom;
+
+    const tirnakBoyu = 160;
+    const isimBoyu = 46;
+    // Hizmet satırı ve kriter etiketleri 30'dan büyütüldü (kullanıcı isteği:
+    // "ufak yazıyor"). İsmin ALTINDA kalmaları şart — 46'ya yaklaştırılmadı,
+    // yoksa isim satırı öne çıkan başlık olmaktan çıkar.
+    const metaBoyu = 38;
+    const kritBoyu = 38;
+    const kritYildiz = 46;
+    const kritSatirH = 58;
+    const kritAra = 16;
+
+    ctx.textBaseline = "top";
+
+    // Tırnak glifi 160px'lik em kutusunun yalnızca ÜST kısmını dolduruyor;
+    // kutunun geri kalanı boş piksel. Yüksekliği kutudan alırsak altında
+    // sebepsiz bir boşluk kalıyor (kullanıcı: "tırnağın altındaki boşluk çok
+    // fazla"). Bu yüzden glifin gerçek sınırı ölçülüyor; ölçüm desteklenmezse
+    // 0.45 oranına düşülüyor.
+    ctx.font = `500 ${tirnakBoyu}px Fredoka, sans-serif`;
+    const tirnakOlcu = ctx.measureText("“");
+    const tirnakH = tirnakOlcu.actualBoundingBoxDescent || tirnakBoyu * 0.45;
+
+    const meta = [row["Hizmet"], row["Cihaz Modeli"]].filter(Boolean).join(" · ");
+    const kritBlok = CRITERIA.length * kritSatirH + (CRITERIA.length - 1) * kritAra;
+
+    // Glif ayrıca 0.18 em yukarı kaydırılarak çiziliyor (kutunun üstündeki
+    // boşluğu yutmak için), o yüzden gerçek alt kenarı bu kadar yukarıda.
+    const tirnakKaydir = tirnakBoyu * 0.18;
+    const ustBlok = Math.max(0, tirnakH - tirnakKaydir) + 26;
+    const altBlok =
+      44 +                                     // metinden sonraki boşluk
+      isimBoyu * 1.2 +
+      (meta ? metaBoyu * 1.3 + 6 : 0) +
+      36 +                                     // puanlardan önceki boşluk
+      kritBlok;
+
+    // --- yorum metni: punto SABİT, sığmazsa küçülür ---
+    const enFazlaMetin = guvenliH - STORY.pad * 2 - ustBlok - altBlok;
+    const yorum = String(row["Yorum"] || "").trim();
+    let punto = STORY.textSize;
+    let satirlar = [];
+    for (; punto >= STORY.minText; punto -= 1) {
+      ctx.font = `400 ${punto}px "Nunito Sans", sans-serif`;
+      satirlar = satirlaraBol(ctx, yorum, icG);
+      if (satirlar.length * punto * STORY.lineHeight <= enFazlaMetin) break;
+    }
+
+    // En küçük puntoda bile sığmıyorsa kısalt. Bu bir karar: görselin taşması
+    // ya da yazının okunmaz hale gelmesi yerine metin kesiliyor, ve panelde
+    // kullanıcıya bunun olduğu SÖYLENİYOR (storyNote).
+    let kisaltildi = false;
+    if (satirlar.length * punto * STORY.lineHeight > enFazlaMetin) {
+      const sigan = Math.max(1, Math.floor(enFazlaMetin / (punto * STORY.lineHeight)));
+      satirlar = satirlar.slice(0, sigan);
+      satirlar[satirlar.length - 1] = satirlar[satirlar.length - 1].replace(/\s*\S*$/, "") + "…";
+      kisaltildi = true;
+    }
+
+    // --- kartı şimdi çizebiliriz: yüksekliği belli ---
+    const metinH = satirlar.length * punto * STORY.lineHeight;
+    const kartH = Math.min(guvenliH, ustBlok + metinH + altBlok + STORY.pad * 2);
+    const kartY = guvenliY + (guvenliH - kartH) / 2;
 
     // Sitedeki panelin aynısı: zeminle AYNI renk, ayıran tek şey gölge.
     ctx.save();
@@ -1078,72 +1149,13 @@
     ctx.fill();
     ctx.restore();
 
-    const icX = kartX + STORY.pad;
-    const icG = kartG - STORY.pad * 2;
-    const icY = kartY + STORY.pad;
-    const icH = kartH - STORY.pad * 2;
+    // --- içerik: yukarıdan aşağı akıyor, hiçbir blok dibe yaslanmıyor ---
+    let y = kartY + STORY.pad;
 
-    // --- değişmeyen yükseklikler (yorum metni dışındaki her şey) ---
-    // Fredoka'nın tırnak glifi em kutusunun küçük bir kısmını kaplıyor;
-    // 110px'te ekranda minik kalıyordu, ölçülüp 160'a çıkarıldı.
-    const tirnakBoyu = 160;
-    const isimBoyu = 46;
-    // Hizmet satırı ve kriter etiketleri 30'dan 36'ya çıktı (kullanıcı isteği:
-    // "ufak yazıyor"). İsmin ALTINDA kalmaları şart — 46'ya yaklaştırılmadı,
-    // yoksa isim satırı öne çıkan başlık olmaktan çıkar.
-    const metaBoyu = 38;
-    const kritBoyu = 38;
-    const kritYildiz = 46;
-    const kritSatirH = 58;
-    const kritAra = 16;
-
-    const meta = [row["Hizmet"], row["Cihaz Modeli"]].filter(Boolean).join(" · ");
-    const kritBlok = CRITERIA.length * kritSatirH + (CRITERIA.length - 1) * kritAra;
-
-    const sabit =
-      tirnakBoyu + 28 +                       // tırnak + altındaki boşluk
-      44 +                                    // metinden sonraki boşluk
-      isimBoyu * 1.2 +
-      (meta ? metaBoyu * 1.3 + 6 : 0) +
-      36 +                                    // puanlardan önceki boşluk
-      kritBlok;
-
-    // --- yorum metnini kalan alana sığacak EN BÜYÜK punto ile yerleştir ---
-    const kalan = icH - sabit;
-    const yorum = String(row["Yorum"] || "").trim();
-    let punto = STORY.maxText;
-    let satirlar = [];
-    for (; punto >= STORY.minText; punto -= 1) {
-      ctx.font = `400 ${punto}px "Nunito Sans", sans-serif`;
-      satirlar = satirlaraBol(ctx, yorum, icG);
-      if (satirlar.length * punto * STORY.lineHeight <= kalan) break;
-    }
-
-    // En küçük puntoda bile sığmıyorsa kısalt. Bu bir karar: görselin taşması
-    // ya da yazının okunmaz hale gelmesi yerine metin kesiliyor, ve panelde
-    // kullanıcıya bunun olduğu SÖYLENİYOR (storyNote).
-    let kisaltildi = false;
-    if (satirlar.length * punto * STORY.lineHeight > kalan) {
-      const sigan = Math.max(1, Math.floor(kalan / (punto * STORY.lineHeight)));
-      satirlar = satirlar.slice(0, sigan);
-      satirlar[satirlar.length - 1] = satirlar[satirlar.length - 1].replace(/\s*\S*$/, "") + "…";
-      kisaltildi = true;
-    }
-
-    // --- çizim ---
-    let y = icY;
-
-    ctx.textBaseline = "top";
     ctx.fillStyle = renk.copper;
     ctx.font = `500 ${tirnakBoyu}px Fredoka, sans-serif`;
-    ctx.fillText("“", icX, y - tirnakBoyu * 0.18);
-    y += tirnakBoyu + 28;
-
-    // Satır sayısı tam sayı olduğu için seçilen punto kalan alanı hiçbir zaman
-    // tam doldurmuyor; artan boşluk metnin ALTINDA birikirse isimle arasında
-    // sebepsiz bir delik gibi duruyor. Blok kendi alanında ortalanıyor.
-    const metinH = satirlar.length * punto * STORY.lineHeight;
-    y += Math.max(0, (kalan - metinH) / 2);
+    ctx.fillText("“", icX, y - tirnakKaydir);
+    y += ustBlok;
 
     ctx.fillStyle = renk.text;
     ctx.font = `400 ${punto}px "Nunito Sans", sans-serif`;
@@ -1152,12 +1164,7 @@
       y += punto * STORY.lineHeight;
     });
 
-    // Alt blok (isim + hizmet + puanlar) kartın DİBİNE yaslanıyor; yorum metni
-    // yukarıdan gelip aradaki boşlukta ortalanıyor. "hazefix.org" alt yazısı
-    // 2026-09-05'te kullanıcı isteğiyle kaldırıldı, o yüzden en alttaki blok
-    // artık puan satırları.
-    y = icY + icH - kritBlok - 36
-        - (meta ? metaBoyu * 1.3 + 6 : 0) - isimBoyu * 1.2;
+    y += 44;
 
     ctx.fillStyle = renk.text;
     ctx.font = `500 ${isimBoyu}px Fredoka, sans-serif`;
