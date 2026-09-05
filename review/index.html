@@ -104,7 +104,15 @@
      temaya göre değişecek — sabit hex yazılırsa o gün gözden kaçar. */
   .panel {
     width: 100%;
-    max-width: 560px;
+    /* Masaüstünde geniş panel — kullanıcı isteği, referans nanofix.ca/review.
+       1242px tahmin değil ölçüm: referansın kapsayıcısı 1290px üst sınırlı ve
+       iki yanında 24px boşluk var, geriye kalan görünür panel tam 1242px.
+
+       TELEFONDA HİÇBİR ŞEY DEĞİŞMEZ ve bu yüzden @media bloğu YOK: burası bir
+       ÜST sınır, dar ekranda bağlayıcı olan `width: 100%`. Panel eskiden de,
+       şimdi de ekranı doldurup body'nin 20px yan boşluğunu bırakıyor.
+       Bir @media eklemek aynı sonucu ikinci kez, kırılgan biçimde yazmak olurdu. */
+    max-width: 1242px;
     background: var(--panel);
     border: 1px solid var(--panel-edge);
     border-radius: 15px;
