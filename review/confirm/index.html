@@ -1058,6 +1058,27 @@
     return satirlar;
   }
 
+  // Tek satırlık bir metni verilen genişliğe sığdırır: önce puntoyu düşürerek,
+  // taban puntoda hâlâ sığmıyorsa sonunu kırparak.
+  //
+  // Gerekiyor çünkü isim 80, hizmet+model 80+ karaktere kadar çıkabiliyor ve
+  // sabit puntoda kartın dışına taşıyorlar. Ölçüldü: 45 karakterlik bir isim
+  // 46px'te sağ kenardan 34 piksel satır boyunca dışarı çıkıyordu.
+  function sigdir(ctx, metin, maxG, fontYap, basPunto, tabanPunto) {
+    let punto = basPunto;
+    for (; punto > tabanPunto; punto -= 1) {
+      ctx.font = fontYap(punto);
+      if (ctx.measureText(metin).width <= maxG) return { punto, metin };
+    }
+    ctx.font = fontYap(punto);
+    if (ctx.measureText(metin).width <= maxG) return { punto, metin };
+    let kesik = metin;
+    while (kesik.length > 1 && ctx.measureText(kesik + "…").width > maxG) {
+      kesik = kesik.slice(0, -1);
+    }
+    return { punto, metin: kesik + "…" };
+  }
+
   // Büyük bir fotoğrafı tek adımda küçültmek bulanıklaştırıyor: tarayıcı
   // iki-doğrusal örnekliyor, ara kademe üretmiyor. Telefon fotoğrafları
   // 2268x4032 geliyor ve karta ~350px olarak giriyor — 6-7 katlık bir
@@ -1299,8 +1320,16 @@
     ctx.font = `400 ${punto}px "Nunito Sans", sans-serif`;
     const ilkOlcu = ctx.measureText(satirlar[0] || "");
     const sonOlcu = ctx.measureText(satirlar[satirlar.length - 1] || "");
-    ctx.font = `500 ${isimBoyu}px Fredoka, sans-serif`;
-    const isimOlcu = ctx.measureText(String(row["İsim"] || ""));
+    // İsim ve hizmet satırı karta sığdırılıyor; sığmazsa puntoları düşüyor,
+    // taban puntoda da sığmazsa sonları kırpılıyor.
+    const isimSig = sigdir(ctx, String(row["İsim"] || ""), icG,
+      (p) => `500 ${p}px Fredoka, sans-serif`, isimBoyu, 28);
+    const metaSig = meta
+      ? sigdir(ctx, meta, icG, (p) => `400 ${p}px "Nunito Sans", sans-serif`, metaBoyu, 26)
+      : { punto: metaBoyu, metin: "" };
+
+    ctx.font = `500 ${isimSig.punto}px Fredoka, sans-serif`;
+    const isimOlcu = ctx.measureText(isimSig.metin);
 
     // actualBoundingBoxAscent: çizim noktasından glifin ÜST kenarına olan
     // mesafe (yukarısı pozitif). Descent de aşağısı. İkisi de harfe göre
@@ -1320,8 +1349,8 @@
     // başlıyor: kısa bir yorumda fotoğraf metinden uzun kalıyor.
     const rBlokAlt = foto ? Math.max(rSonAlt, rFotoAlt) : rSonAlt;
     const rIsimY = rBlokAlt + ARALIK_ALT + isimOlcu.actualBoundingBoxAscent;
-    const rMetaY = rIsimY + isimBoyu * 1.2 + 6;
-    const rKritY = rIsimY + isimBoyu * 1.2 + (meta ? metaBoyu * 1.3 + 6 : 0) + 36;
+    const rMetaY = rIsimY + isimSig.punto * 1.2 + 6;
+    const rKritY = rIsimY + isimSig.punto * 1.2 + (meta ? metaSig.punto * 1.3 + 6 : 0) + 36;
 
     const kartH = Math.min(guvenliH, rKritY + kritBlok + STORY.pad * 2);
     const kartY = guvenliY + (guvenliH - kartH) / 2;
@@ -1362,13 +1391,13 @@
     }
 
     ctx.fillStyle = renk.text;
-    ctx.font = `500 ${isimBoyu}px Fredoka, sans-serif`;
-    ctx.fillText(String(row["İsim"] || ""), icX, ofs + rIsimY);
+    ctx.font = `500 ${isimSig.punto}px Fredoka, sans-serif`;
+    ctx.fillText(isimSig.metin, icX, ofs + rIsimY);
 
     if (meta) {
       ctx.fillStyle = renk.muted;
-      ctx.font = `400 ${metaBoyu}px "Nunito Sans", sans-serif`;
-      ctx.fillText(meta, icX, ofs + rMetaY);
+      ctx.font = `400 ${metaSig.punto}px "Nunito Sans", sans-serif`;
+      ctx.fillText(metaSig.metin, icX, ofs + rMetaY);
     }
 
     let y = ofs + rKritY;
