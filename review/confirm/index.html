@@ -1022,7 +1022,13 @@
   // Satır kırma. Ziyaretçinin kendi satır sonları korunuyor; tek bir kelime
   // satıra sığmıyorsa (uzun bağlantı gibi) harf harf bölünüyor, yoksa
   // kartın dışına taşardı.
-  function satirlaraBol(ctx, metin, maxG) {
+  //
+  // `genislik` SAYI ya da FONKSİYON olabilir. Fonksiyon hâli fotoğrafın
+  // yanından akan metin için: fotoğrafın hizasındaki satırlar dar, altındakiler
+  // tam genişlikte. Genişlik her satırda yeniden soruluyor, başta bir kez
+  // değil — yoksa fotoğraf biter bitmez genişleyemezdi.
+  function satirlaraBol(ctx, metin, genislik) {
+    const gen = typeof genislik === "function" ? genislik : () => genislik;
     const satirlar = [];
     metin.split(/\r?\n/).forEach((paragraf) => {
       const kelimeler = paragraf.split(/\s+/).filter(Boolean);
@@ -1030,13 +1036,15 @@
       let satir = "";
       kelimeler.forEach((kelime) => {
         let k = kelime;
-        while (ctx.measureText(k).width > maxG && k.length > 1) {
+        while (k.length > 1 && ctx.measureText(k).width > gen(satirlar.length)) {
+          const maxG = gen(satirlar.length);
+          if (satir) { satirlar.push(satir); satir = ""; continue; }
           let kes = 1;
           while (kes < k.length && ctx.measureText(k.slice(0, kes + 1)).width <= maxG) kes++;
-          if (satir) { satirlar.push(satir); satir = ""; }
           satirlar.push(k.slice(0, kes));
           k = k.slice(kes);
         }
+        const maxG = gen(satirlar.length);
         const deneme = satir ? `${satir} ${k}` : k;
         if (!satir || ctx.measureText(deneme).width <= maxG) {
           satir = deneme;
@@ -1048,6 +1056,26 @@
       if (satir) satirlar.push(satir);
     });
     return satirlar;
+  }
+
+  // Büyük bir fotoğrafı tek adımda küçültmek bulanıklaştırıyor: tarayıcı
+  // iki-doğrusal örnekliyor, ara kademe üretmiyor. Telefon fotoğrafları
+  // 2268x4032 geliyor ve karta ~350px olarak giriyor — 6-7 katlık bir
+  // küçültme, fark bariz. Kaynak hedefin iki katından büyük olduğu sürece
+  // yarıya indiriliyor, son adımı asıl çizim yapıyor.
+  function kademeliKucult(img, hedefG) {
+    let kaynak = img, g = img.naturalWidth, y = img.naturalHeight;
+    while (g / 2 > hedefG) {
+      const c = document.createElement("canvas");
+      c.width = Math.round(g / 2);
+      c.height = Math.round(y / 2);
+      const x = c.getContext("2d");
+      x.imageSmoothingEnabled = true;
+      x.imageSmoothingQuality = "high";
+      x.drawImage(kaynak, 0, 0, c.width, c.height);
+      kaynak = c; g = c.width; y = c.height;
+    }
+    return kaynak;
   }
 
   // Yorumun fotoğrafını yükler; yoksa ya da inemezse null döner.
@@ -1170,26 +1198,36 @@
     // gerçek yerleşim ölçümden sonra çıkıyor ve bu tahminden büyük olmamalı,
     // yoksa içerik karttan taşar. Alt blokta metin-isim payı 2*ARALIK olarak
     // alındı; gerçekte satır yüksekliği bunun bir kısmını zaten yutuyor.
-    // Ziyaretçinin eklediği fotoğraf, yorum metni ile isim arasına giriyor
-    // (kullanıcı isteği, 2026-09-05). Fotoğrafsız yorumda bu blok hiç yok ve
-    // kart eskisi gibi çıkıyor — fotoğraf opsiyonel bir alan, çoğu yorumda
-    // olmayacak.
+    // Ziyaretçinin eklediği fotoğraf metnin SAĞINDA duruyor, yazı da onun
+    // yanından akıyor (kullanıcı isteği, 2026-09-05). Önce metnin altında,
+    // solda duruyordu; sağındaki kocaman boşluk ölü alan oluyordu.
+    // Fotoğrafsız yorumda hiçbir şey değişmiyor.
     //
-    // SABİT YÜKSEKLİK, DOĞAL GENİŞLİK: yatay fotoğraf geniş, dikey fotoğraf
-    // dar çıkıyor ama ikisi de aynı yüksekliği kaplıyor. Bunun iki faydası
-    // var: (1) hiçbir fotoğraf KIRPILMIYOR, yani "cihazın yarısı kesilmiş"
-    // sorunu hiç doğmuyor; (2) kartın boyu fotoğrafın oranına göre
-    // zıplamıyor. Genişlik kart içine sığmazsa (panorama) yükseklikten
-    // kısılıyor.
-    const FOTO_H = 400;
-    const FOTO_ARALIK = 64;   // fotoğrafın üstündeki ve altındaki boşluk
+    // Boyut: kart içi genişliğin %46'sı. Yükseklik oranından geliyor ama
+    // FOTO_MAX_H ile sınırlı — telefon fotoğrafları 9:16 gelebiliyor ve
+    // sınırsız bırakılsa kartı tek başına dolduruyor.
+    //
+    // KIRPMA YOK: fotoğraf kendi oranında duruyor, yalnızca ölçekleniyor.
+    // "Cihazın yarısı kesilmiş" sorunu bu yüzden hiç doğmuyor.
+    const FOTO_ORAN = 0.46;
+    const FOTO_MAX_H = 620;
+    const FOTO_BOSLUK = 32;   // fotoğrafla yazı arasındaki yatay boşluk
     const foto = await storyFoto(row);
-    const fotoBlok = foto ? FOTO_ARALIK * 2 + FOTO_H : 0;
+
+    let fotoG = 0, fotoY = 0;
+    if (foto) {
+      fotoG = Math.round(icG * FOTO_ORAN);
+      fotoY = fotoG * (foto.naturalHeight / foto.naturalWidth);
+      if (fotoY > FOTO_MAX_H) {
+        fotoY = FOTO_MAX_H;
+        fotoG = Math.round(FOTO_MAX_H * (foto.naturalWidth / foto.naturalHeight));
+      }
+    }
+    const darG = icG - fotoG - FOTO_BOSLUK;   // fotoğrafın hizasındaki satırlar
 
     const ustBlokTahmin = Math.max(0, tirnakH - tirnakKaydir) + ARALIK_UST + STORY.textSize * 0.2;
     const altBlokTahmin =
       ARALIK_ALT +
-      fotoBlok +
       isimBoyu * 1.2 +
       (meta ? metaBoyu * 1.3 + 6 : 0) +
       36 +                                     // puanlardan önceki boşluk
@@ -1200,17 +1238,30 @@
     const yorum = String(row["Yorum"] || "").trim();
     let punto = STORY.textSize;
     let satirlar = [];
+
+    // Fotoğrafın kaç satırı daralttığı puntoya bağlı, punto da satır sayısına —
+    // o yüzden ikisi aynı döngüde çözülüyor. `+16` fotoğrafın hemen altındaki
+    // satırın dibine yapışmaması için küçük bir pay.
+    const darSatirSayisi = (p) =>
+      foto ? Math.ceil((fotoY + 16) / (p * STORY.lineHeight)) : 0;
+    const genislikFn = (p) => (i) => (i < darSatirSayisi(p) ? darG : icG);
+
+    // Metin bloğunun yüksekliği, metin ile fotoğrafın BÜYÜĞÜ: kısa bir yorumda
+    // fotoğraf metinden aşağı taşıyor ve isim onun altından başlamalı.
+    const blokYuksekligi = (n, p) =>
+      Math.max(n * p * STORY.lineHeight, foto ? fotoY : 0);
+
     for (; punto >= STORY.minText; punto -= 1) {
       ctx.font = `400 ${punto}px "Nunito Sans", sans-serif`;
-      satirlar = satirlaraBol(ctx, yorum, icG);
-      if (satirlar.length * punto * STORY.lineHeight <= enFazlaMetin) break;
+      satirlar = satirlaraBol(ctx, yorum, genislikFn(punto));
+      if (blokYuksekligi(satirlar.length, punto) <= enFazlaMetin) break;
     }
 
     // En küçük puntoda bile sığmıyorsa kısalt. Bu bir karar: görselin taşması
     // ya da yazının okunmaz hale gelmesi yerine metin kesiliyor, ve panelde
     // kullanıcıya bunun olduğu SÖYLENİYOR (storyNote).
     let kisaltildi = false;
-    if (satirlar.length * punto * STORY.lineHeight > enFazlaMetin) {
+    if (blokYuksekligi(satirlar.length, punto) > enFazlaMetin) {
       const sigan = Math.max(1, Math.floor(enFazlaMetin / (punto * STORY.lineHeight)));
       satirlar = satirlar.slice(0, sigan);
       satirlar[satirlar.length - 1] = satirlar[satirlar.length - 1].replace(/\s*\S*$/, "") + "…";
@@ -1236,21 +1287,16 @@
     const rSonSatirY = rMetinY + (satirlar.length - 1) * punto * STORY.lineHeight;
     const rSonAlt = rSonSatirY + sonOlcu.actualBoundingBoxDescent;
 
-    // Fotoğrafın ölçüsü: yükseklik sabit, genişlik oranından geliyor. Çok geniş
-    // bir fotoğraf kart içine sığmazsa yükseklikten kısılıyor — taşmaktansa
-    // küçülsün.
-    let fotoG = 0, fotoY_h = 0;
-    if (foto) {
-      fotoY_h = FOTO_H;
-      fotoG = FOTO_H * (foto.naturalWidth / foto.naturalHeight);
-      if (fotoG > icG) {
-        fotoG = icG;
-        fotoY_h = icG * (foto.naturalHeight / foto.naturalWidth);
-      }
-    }
-    const rFotoY = rSonAlt + FOTO_ARALIK;
-    const rIsimY = rSonAlt + (foto ? FOTO_ARALIK * 2 + fotoY_h : ARALIK_ALT)
-      + isimOlcu.actualBoundingBoxAscent;
+    // Fotoğrafın üst kenarı ilk satırın MÜREKKEP üstüyle hizalı — çizim
+    // noktasıyla değil. Aksi halde fotoğraf yazıdan birkaç piksel yukarıda
+    // başlıyor ve hiza bozuk görünüyor.
+    const rFotoY = rMetinY - ilkOlcu.actualBoundingBoxAscent;
+    const rFotoAlt = rFotoY + fotoY;
+
+    // İsim, metnin ve fotoğrafın hangisi aşağıda bitiyorsa onun altından
+    // başlıyor: kısa bir yorumda fotoğraf metinden uzun kalıyor.
+    const rBlokAlt = foto ? Math.max(rSonAlt, rFotoAlt) : rSonAlt;
+    const rIsimY = rBlokAlt + ARALIK_ALT + isimOlcu.actualBoundingBoxAscent;
     const rMetaY = rIsimY + isimBoyu * 1.2 + 6;
     const rKritY = rIsimY + isimBoyu * 1.2 + (meta ? metaBoyu * 1.3 + 6 : 0) + 36;
 
@@ -1278,14 +1324,17 @@
       ctx.fillText(satir, icX, ofs + rMetinY + i * punto * STORY.lineHeight);
     });
 
-    // Fotoğraf: köşeleri kartla aynı dilde yuvarlatılıyor. clip() save/restore
-    // arasında — aksi halde kırpma alanı bundan sonraki her çizimde de geçerli
-    // kalır ve isim/puanlar görünmez olurdu.
+    // Fotoğraf SAĞA yaslı; metin solundan akıyor. Köşeleri kartla aynı dilde
+    // yuvarlatılıyor. clip() save/restore arasında — aksi halde kırpma alanı
+    // bundan sonraki her çizimde de geçerli kalır ve isim/puanlar görünmezdi.
     if (foto) {
+      const fx = icX + icG - fotoG;
       ctx.save();
-      yuvarlakDikdortgen(ctx, icX, ofs + rFotoY, fotoG, fotoY_h, 20);
+      yuvarlakDikdortgen(ctx, fx, ofs + rFotoY, fotoG, fotoY, 20);
       ctx.clip();
-      ctx.drawImage(foto, icX, ofs + rFotoY, fotoG, fotoY_h);
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(kademeliKucult(foto, fotoG), fx, ofs + rFotoY, fotoG, fotoY);
       ctx.restore();
     }
 
