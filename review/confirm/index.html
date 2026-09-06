@@ -1258,7 +1258,11 @@
     //
     // KIRPMA YOK: fotoğraf kendi oranında duruyor, yalnızca ölçekleniyor.
     const FOTO_ORAN = 0.433;         // dikey: kart içi genişliğe oran -> 350px
-    const FOTO_YATAY_ORAN = 0.56;    // yatay: -> 452px
+    // Yatay fotoğraf 452px'ten 493px'e genişledi (kullanıcı isteği). Sağ kenar
+    // yerinde kalıyor, büyüme SOLA doğru: fotoğrafın solunda ve üstünde boş
+    // alan kalıyordu. Bedeli yanındaki metin sütununun 356'dan 315px'e inmesi;
+    // orada yalnızca birkaç satır olduğu için kabul edildi.
+    const FOTO_YATAY_ORAN = 0.61;    // yatay: -> 493px
     const FOTO_MAX_H = 620;          // yükseklik üst sınırı (uzun dikey fotoğraflar)
     const FOTO_BOSLUK = 32;          // fotoğrafla yazı arasındaki yatay boşluk
 
