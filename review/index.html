@@ -194,6 +194,20 @@
   }
 
   .req { font-weight: 400; font-size: 13px; color: var(--danger); transition: opacity 150ms ease, transform 150ms ease; }
+
+  /* Yorum alanındaki karakter sayacı, "(gerekli)" rozetiyle AYNI düğümde ve
+     aynı yerde duruyor — 60. karakterde biri gidip diğeri geliyor.
+     Eş aralıklı font bilinçli: rakam değiştikçe metnin genişliği oynamasın,
+     sayaç yerinde titremesin. Renk sönük ama okunur; sınır aşılınca
+     "(gerekli)" ile aynı kırmızıya dönüyor, yani kırmızı bu formda her
+     zaman "burada bir sorun var" demek. */
+  .req.counter {
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    letter-spacing: 0.04em;
+  }
+
+  .req.counter.over { color: var(--danger); }
   .opt { font-weight: 400; font-size: 13px; color: var(--text-muted); }
   .req-hidden { opacity: 0; transform: scale(0.85); pointer-events: none; }
 
@@ -604,6 +618,11 @@
 
     <div class="field">
       <label for="reviewText"><span class="field-name"><span class="refdes"></span>Yorum</span> <span class="req" id="reviewReq">(gerekli / en az 15 karakter)</span></label>
+      <!-- maxlength 600 DEĞİL, bilinçli olarak yukarıda: sınır aşıldığında
+           sayacın kırmızıya dönmesi ve kişinin silerek 600'e inmesi isteniyor.
+           maxlength 600 olsaydı tarayıcı 601. karakteri hiç yazdırmaz, kırmızı
+           uyarı da hiç görünmezdi. 2000 yalnızca uçuk bir yapıştırmaya karşı
+           tavan; gerçek sınırı REVIEW_MAX ve veritabanı kuralı uyguluyor. -->
       <textarea id="reviewText" name="review" required maxlength="2000"></textarea>
     </div>
 
@@ -656,6 +675,22 @@
   // bilinçli olarak yüksek.
   const NAME_MIN = 3;
   const REVIEW_MIN = 15;
+
+  // Yorumun ÜST sınırı. Veritabanındaki reviews_review_text_check ile birebir
+  // aynı olmalı (migration-yorum-600-karakter.sql) — ayrışırsa form geçirdiği
+  // bir yorumda gönderim veritabanında patlar.
+  //
+  // 600 ölçümle seçildi: story görselinde yorum sabit 54 puntoda yazılıyor,
+  // güvenli alana ~335 karakter sığıyor, 600 karakterde punto en fazla 40'a
+  // (telefonda ~14,5 pt) iniyor ve hâlâ rahat okunuyor. 2000 karakterlik bir
+  // yorum 26 puntoya kadar iniyordu, o boyda story'de okunmuyor.
+  const REVIEW_MAX = 600;
+
+  // Sayaç bu karakterden itibaren görünüyor. 60 bilinçli: "(gerekli / en az 15
+  // karakter)" 15'te kayboluyor, arada sessiz bir aralık kalıyor ve sayaç ancak
+  // yazı gerçekten uzamaya başlayınca beliriyor. Sınırdan çok uzaktayken
+  // ekranda gereksiz bir sayı durmuyor.
+  const REVIEW_COUNTER_FROM = 60;
 
   const form = document.getElementById("reviewForm");
   form.reset();
@@ -828,9 +863,37 @@
     toggleReq(nameReq, form.firstName.value.trim().length < NAME_MIN);
   });
 
-  form.reviewText.addEventListener("input", () => {
-    toggleReq(reviewReq, form.reviewText.value.trim().length < REVIEW_MIN);
-  });
+  // Yorum rozetinin üç hâli var ve üçü de AYNI düğümde, aynı yerde duruyor:
+  //
+  //   0 – 14   : "(gerekli / en az 15 karakter)", kırmızı
+  //   15 – 59  : görünmüyor
+  //   60 +     : "(123/600)", sönük gri; 600 aşılınca kırmızı
+  //
+  // Uzunluk trim'lenmiş metinden sayılıyor: veritabanına giden ve doğrulamada
+  // ölçülen değer de o. Sayaç ile gönderim aynı sayıyı görmezse rozet "600/600"
+  // derken gönderim reddedilebilirdi.
+  function yorumRozetiniYansit() {
+    const n = form.reviewText.value.trim().length;
+
+    if (n < REVIEW_MIN) {
+      reviewReq.textContent = `(gerekli / en az ${REVIEW_MIN} karakter)`;
+      reviewReq.classList.remove("counter", "over");
+      toggleReq(reviewReq, true);
+      return;
+    }
+
+    if (n < REVIEW_COUNTER_FROM) {
+      toggleReq(reviewReq, false);
+      return;
+    }
+
+    reviewReq.textContent = `(${n}/${REVIEW_MAX})`;
+    reviewReq.classList.add("counter");
+    reviewReq.classList.toggle("over", n > REVIEW_MAX);
+    toggleReq(reviewReq, true);
+  }
+
+  form.reviewText.addEventListener("input", yorumRozetiniYansit);
 
   // Üç kriter aynı yıldız bileşenini paylaşıyor, yalnızca radio group adı ve
   // (gerekli) rozeti farklı. Puanlar burada, `ratings` nesnesinde, kriter
@@ -885,7 +948,7 @@
   RATING_CRITERIA.forEach(setupStarRating);
 
   toggleReq(nameReq, form.firstName.value.trim().length < NAME_MIN);
-  toggleReq(reviewReq, form.reviewText.value.trim().length < REVIEW_MIN);
+  yorumRozetiniYansit();
 
   function setStatus(message, kind) {
     statusEl.textContent = message;
@@ -911,11 +974,21 @@
   // Tek cümle. Karakter eşiği bilgisi etiketteki "(en az N karakter yazınız)"
   // rozetinde durduğu için modalda tekrarlanmıyor — eşiğin altında kalan alan
   // da burada sadece "doldurulmamış" sayılıyor.
+  // Pencereyi açan tek yer burası. showValidationModal eksik alan cümlesini
+  // kurar, üst sınır uyarısı ise kendi cümlesiyle doğrudan buraya gelir.
+  //
+  // innerHTML kullanılıyor ama içeri giren metnin tamamı BİZİM yazdığımız
+  // sabit cümle; ziyaretçiden gelen hiçbir şey buraya konmuyor (sayı hariç,
+  // o da length'ten geliyor). Yoruma ait serbest metni buraya basma.
+  function showModal(html) {
+    modalMsg.innerHTML = html;
+    validationModal.classList.add("open");
+  }
+
   function showValidationModal(missing) {
     const list = birlestir(missing.map((name) => `<strong>${name}</strong>`));
     const suffix = missing.length === 1 ? "alanını" : "alanlarını";
-    modalMsg.innerHTML = `${list} ${suffix} doldurunuz.`;
-    validationModal.classList.add("open");
+    showModal(`${list} ${suffix} doldurunuz.`);
   }
 
   function hideValidationModal() {
@@ -965,6 +1038,19 @@
 
     if (missing.length) {
       showValidationModal(missing);
+      return;
+    }
+
+    // Üst sınır eksik alan DEĞİL, fazlalık: "doldurunuz" cümlesine sokulamaz,
+    // o yüzden kendi mesajı var. Sayaç kırmızıyken gönderim de gerçekten
+    // engelleniyor — rozet ile davranışın ayrışmaması kuralı (bkz. NAME_MIN /
+    // REVIEW_MIN dersi).
+    if (reviewText.length > REVIEW_MAX) {
+      showModal(
+        `Yorumunuz <strong>${reviewText.length}</strong> karakter. ` +
+        `En fazla <strong>${REVIEW_MAX}</strong> karakter gönderilebiliyor, ` +
+        `${reviewText.length - REVIEW_MAX} karakter kısaltmanız gerekiyor.`
+      );
       return;
     }
 
