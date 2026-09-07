@@ -44,12 +44,12 @@
        yani erişilebilirlik tarafında bedeli yok.
        NOT: favicon hâlâ eski zemin tonunda (#E6D3B3) — logo geçici olduğu
        için bilerek dokunulmadı; kalıcı logo gelince ikisi eşitlenmeli. */
-    --bg: #f1e8d7;
-    --panel: #f1e8d7;
-    --panel-border: #dfc8a1;
+    --bg: #f5eee3;
+    --panel: #f5eee3;
+    --panel-border: #e2ceac;
     --panel-edge: transparent;
     --panel-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-    --field-bg: #ebdec6;
+    --field-bg: #efe4d2;
     --text-main: #241d12;
     --text-muted: #4e4436;
     --copper: #824b22;
@@ -60,11 +60,15 @@
     --copper-wash: rgba(130, 75, 34, 0.14);
     --on-copper: #f7efe2;
     /* Yıldızlar 2026-09-04'te ★ karakterinden kullanıcının verdiği iki SVG'ye geçti.
-       İkisi de #1c304e (logonun mürekkep rengi) — durumu RENK değil BİÇİM
-       ayırıyor: boş yıldız içi boş (yalnızca kontur), dolu yıldız içi dolu.
-       Kullanıcı kararı. Renk aynı gün #07303e'den logoyla eşleşsin diye değişti. */
-    --star-filled: #1c304e;
-    --star-empty: #1c304e;
+       Durumu RENK değil BİÇİM ayırıyor: boş yıldız içi boş (yalnızca kontur),
+       dolu yıldız içi dolu — bu yüzden iki token da aynı değerde.
+       Renk geçmişi: #07303e -> #1c304e (logonun mürekkep rengi) -> #ff5d00
+       (2026-09-07, kullanıcı isteği).
+       ÖLÇÜM NOTU: #ff5d00, #f5eee3 zeminde 2.67:1. Grafik öğeler için WCAG
+       eşiği 3:1, yani bunun ALTINDA — kullanıcı bilgilendirilerek seçti.
+       Dolu/boş ayrımı renge değil biçime dayandığı için puan yine okunuyor. */
+    --star-filled: #ff5d00;
+    --star-empty: #ff5d00;
     /* Yıldız biçimleri MASKE olarak duruyor, resim olarak değil: maskede rengi
        background-color veriyor, yani yukarıdaki iki token yıldızın rengini
        yönetmeye devam ediyor. SVG'nin içindeki "black" sadece maskenin kendisi
@@ -72,6 +76,10 @@
     --star-outline: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M10.1443 6.62753C10.931 4.66653 11.3243 3.68604 12.0006 3.68604C12.6769 3.68604 13.0702 4.66653 13.8568 6.62753L13.8934 6.71885C14.3378 7.82672 14.56 8.38065 15.0129 8.71734C15.4657 9.05403 16.0602 9.10727 17.2491 9.21374L17.464 9.23299C19.4099 9.40726 20.3828 9.49439 20.5909 10.1134C20.7991 10.7324 20.0766 11.3897 18.6316 12.7044L18.1493 13.1432C17.4178 13.8087 17.052 14.1414 16.8815 14.5776C16.8497 14.6589 16.8233 14.7423 16.8024 14.8271C16.6903 15.2817 16.7975 15.7645 17.0117 16.7299L17.0783 17.0305C17.472 18.8048 17.6688 19.692 17.3252 20.0746C17.1967 20.2176 17.0298 20.3206 16.8444 20.3712C16.3482 20.5066 15.6437 19.9325 14.2348 18.7844C13.3096 18.0305 12.847 17.6536 12.3159 17.5688C12.107 17.5354 11.8941 17.5354 11.6852 17.5688C11.1541 17.6536 10.6915 18.0305 9.76638 18.7844C8.35742 19.9325 7.65295 20.5066 7.15675 20.3712C6.97133 20.3206 6.80442 20.2176 6.676 20.0746C6.33232 19.692 6.52915 18.8048 6.92283 17.0305L6.9895 16.7299C7.20371 15.7645 7.31082 15.2817 7.19876 14.8271C7.17786 14.7423 7.15142 14.6589 7.11962 14.5776C6.94915 14.1414 6.5834 13.8087 5.85189 13.1432L5.36961 12.7044C3.92456 11.3897 3.20204 10.7324 3.41022 10.1134C3.6184 9.49439 4.59131 9.40726 6.53712 9.23299L6.75206 9.21374C7.94097 9.10727 8.53543 9.05403 8.98828 8.71734C9.44113 8.38065 9.66333 7.82672 10.1077 6.71885L10.1443 6.62753Z' stroke='black' stroke-width='2'/%3E%3C/svg%3E");
     --star-solid: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M10.3065 7.21986C10.9486 5.61918 11.2696 4.81883 11.7912 4.70791C11.9283 4.67874 12.0701 4.67874 12.2072 4.70791C12.7288 4.81883 13.0499 5.61918 13.6919 7.21986C14.0571 8.13014 14.2396 8.58528 14.5812 8.89485C14.6771 8.98168 14.7811 9.05901 14.8918 9.12576C15.2867 9.36374 15.7796 9.40788 16.7653 9.49617C18.4341 9.64562 19.2685 9.72034 19.5233 10.1961C19.5761 10.2946 19.6119 10.4013 19.6294 10.5117C19.7139 11.0447 19.1005 11.6028 17.8737 12.7189L17.533 13.0288C16.9595 13.5506 16.6727 13.8115 16.5069 14.1372C16.4074 14.3325 16.3406 14.5428 16.3094 14.7598C16.2573 15.1215 16.3412 15.5 16.5092 16.2569L16.5692 16.5274C16.8704 17.8849 17.021 18.5637 16.833 18.8973C16.6641 19.197 16.3531 19.3889 16.0095 19.4053C15.627 19.4236 15.088 18.9844 14.01 18.106C13.2998 17.5273 12.9447 17.2379 12.5505 17.1249C12.1902 17.0216 11.8082 17.0216 11.448 17.1249C11.0538 17.2379 10.6986 17.5273 9.98844 18.106C8.91046 18.9844 8.37147 19.4236 7.98895 19.4053C7.64535 19.3889 7.33431 19.197 7.16544 18.8973C6.97745 18.5637 7.12805 17.8849 7.42924 16.5274L7.48925 16.2569C7.6572 15.5 7.74118 15.1215 7.68907 14.7598C7.65781 14.5428 7.59109 14.3325 7.49159 14.1372C7.32572 13.8115 7.03894 13.5506 6.4654 13.0288L6.12473 12.7189C4.89794 11.6028 4.28454 11.0447 4.36902 10.5117C4.38651 10.4013 4.42239 10.2946 4.47516 10.1961C4.72996 9.72034 5.56434 9.64562 7.2331 9.49617C8.21889 9.40788 8.71178 9.36374 9.10662 9.12576C9.21737 9.05901 9.32138 8.98168 9.4172 8.89485C9.75881 8.58528 9.94138 8.13014 10.3065 7.21986Z' fill='black' stroke='black' stroke-width='2'/%3E%3C/svg%3E");
     --overlay: rgba(45, 33, 18, 0.45);
+    /* Logonun lacivert mürekkep rengi. Sayfada İKİ yerde: "Yorum Bırak"
+       başlığı ve Gönder butonu (2026-09-07, kullanıcı isteği). Yıldızlar da
+       bu renkteydi, aynı gün turuncuya geçtiler. Ölçüldü: zeminde 11.52:1. */
+    --ink: #1c304e;
     --signal: #206541;
     --danger: #9c3628;
     --font-body: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
@@ -145,6 +153,10 @@
     font-family: var(--font-heading);
     font-size: 26px;
     font-weight: 600;
+    /* Sayfadaki TEK lacivert metin (kullanıcı isteği 2026-09-07: "sadece en
+       baştaki Yorum Bırak yazısı"). Onay ekranındaki "Yorum Alındı!" başlığı
+       bilerek --text-main'de bırakıldı; orası ayrı bir ekran. */
+    color: var(--ink);
     letter-spacing: -0.01em;
     margin: 0 0 32px;
   }
@@ -189,14 +201,6 @@
     flex-wrap: wrap;
   }
 
-  .refdes {
-    display: inline-block;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--copper);
-    flex-shrink: 0;
-  }
 
   .field-name {
     display: inline-flex;
@@ -231,9 +235,11 @@
      (kullanıcı isteği, 2026-09-07: "dikdörtgenlerin içinin renkli olması gözüme
      batıyor"). Önce kutular --field-bg ile zeminden bir tık koyuydu; zemin
      açılınca o fark daha da göze çarpar oldu.
-     Çerçeve --copper, yani .refdes noktasının rengiyle AYNI token — ikisi
-     bilerek tek kaynaktan besleniyor, biri değişirse diğeri de takip etsin.
-     Ölçüldü: #824b22 çerçeve, #f1e8d7 zeminde 5.80:1 (arayüz bileşeni eşiği 3).
+     Çerçeve --copper. Bu renk başta alan etiketlerindeki .refdes madde
+     işaretiyle eşleşsin diye seçilmişti; o noktalar 2026-09-07'de kullanıcı
+     isteğiyle KALDIRILDI, çerçeve rengi yerinde bırakıldı — kutuları zeminden
+     ayıran tek şey o ve sayfadaki tek sıcak aksan.
+     Ölçüldü: #824b22 çerçeve, #f5eee3 zeminde 6.12:1 (arayüz eşiği 3).
      --field-bg artık YALNIZCA onay panelindeki .rev yorum kartlarında
      kullanılıyor; token bloğu iki dosyada kopya olduğu için burada da duruyor. */
   input[type="text"], textarea {
@@ -439,22 +445,43 @@
     border-radius: 3px;
   }
 
+  /* GÖNDER BUTONU (2026-09-07, kullanıcı isteği + ekli referans görselleri).
+     Artık tam genişlik DEĞİL: sağa yaslı ve içeriği kadar.
+       - min-width kullanıcının işaretlediği orandan ÖLÇÜLDÜ: referansta buton
+         form genişliğinin sağdaki ~%24'ünü kaplıyordu; 1170px form içi
+         genişlikte bu 281px ediyor.
+       - max-width: 100% dar ekran için ŞART — 375px ekranda form içi 263px'e
+         düşüyor, o olmadan buton panelden taşardı.
+       - width: fit-content, metin uzarsa buton da uzasın diye.
+     Renkler ters çevrildi: zemin --ink, yazı --bg. Hover'da referanstaki gibi
+     yalnızca ÇERÇEVE kalıyor — zemin sayfa rengine, yazı laciverte dönüyor.
+     ÇERÇEVE NORMAL HALDE DE VAR (2px, rengi zeminle aynı): yoksa hover'da
+     çerçeve belirdiğinde buton 4px büyür ve düzen zıplar. Dikey padding bu
+     yüzden 12.5'ten 10.5'e indi — yükseklik 46.5px'te korunuyor, CLAUDE.md'deki
+     "kutu yüksekliği değişmemeli" kuralı. */
   .submit-btn {
-    width: 100%;
-    background: var(--copper);
-    color: var(--on-copper);
-    padding: 12.5px 20px;
+    display: block;
+    width: fit-content;
+    min-width: 280px;
+    max-width: 100%;
+    margin-left: auto;
+    background: var(--ink);
+    color: var(--bg);
+    padding: 10.5px 20px;
     font-size: 16px;
     font-weight: 700;
     letter-spacing: 0.01em;
     font-family: inherit;
-    border: none;
+    border: 2px solid var(--ink);
     border-radius: 6px;
     cursor: pointer;
-    transition: background 0.15s, opacity 0.15s, transform 0.1s ease;
+    transition: background 0.15s, color 0.15s, opacity 0.15s, transform 0.1s ease;
   }
 
-  .submit-btn:hover { background: var(--copper-bright); }
+  .submit-btn:hover {
+    background: var(--bg);
+    color: var(--ink);
+  }
   .submit-btn:active { transform: scale(0.96); }
   .submit-btn:disabled { opacity: 0.55; cursor: not-allowed; }
 
@@ -565,7 +592,7 @@
 
   <form id="reviewForm" novalidate autocomplete="off">
     <div class="field">
-      <label for="firstName"><span class="field-name"><span class="refdes"></span>İsim</span> <span class="req" id="nameReq">(gerekli)</span></label>
+      <label for="firstName"><span class="field-name">İsim</span> <span class="req" id="nameReq">(gerekli)</span></label>
       <input type="text" id="firstName" name="firstName" required maxlength="80" autocomplete="given-name">
     </div>
 
@@ -575,7 +602,7 @@
     </div>
 
     <div class="field">
-      <label id="serviceLabel"><span class="field-name"><span class="refdes"></span>Verilen Hizmet</span> <span class="req" id="serviceReq">(gerekli)</span></label>
+      <label id="serviceLabel"><span class="field-name">Verilen Hizmet</span> <span class="req" id="serviceReq">(gerekli)</span></label>
       <div class="select-wrap" id="serviceSelect">
         <button type="button" class="select-trigger" id="serviceTrigger" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="serviceLabel">
           <span id="serviceValue" class="placeholder">Seçiniz</span>
@@ -593,7 +620,7 @@
     </div>
 
     <div class="field field-hidden" id="deviceField">
-      <label id="deviceLabel"><span class="field-name"><span class="refdes"></span>Cihaz Modeli</span> <span class="req" id="deviceReq">(gerekli)</span></label>
+      <label id="deviceLabel"><span class="field-name">Cihaz Modeli</span> <span class="req" id="deviceReq">(gerekli)</span></label>
       <div class="select-wrap" id="deviceSelect">
         <button type="button" class="select-trigger" id="deviceTrigger" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="deviceLabel">
           <span id="deviceValue" class="placeholder">Seçiniz</span>
@@ -609,7 +636,7 @@
     </div>
 
     <div class="field">
-      <label for="imageUpload"><span class="field-name"><span class="refdes"></span>Fotoğraf</span> <span class="opt">(opsiyonel)</span></label>
+      <label for="imageUpload"><span class="field-name">Fotoğraf</span> <span class="opt">(opsiyonel)</span></label>
       <div class="dropzone">
         <input type="file" id="imageUpload" name="image" accept="image/png,image/jpeg,image/gif,image/webp">
       </div>
@@ -617,7 +644,7 @@
     </div>
 
     <div class="field rating">
-      <label><span class="field-name"><span class="refdes"></span>Hizmet Kalitesi</span> <span class="req" id="serviceQualityReq">(gerekli)</span></label>
+      <label><span class="field-name">Hizmet Kalitesi</span> <span class="req" id="serviceQualityReq">(gerekli)</span></label>
       <div class="stars" role="radiogroup" aria-label="Hizmet Kalitesi Puanı">
         <input type="radio" id="sq-star5" name="ratingServiceQuality" value="5" required aria-label="5 yıldız — Mükemmel"><label for="sq-star5" title="Mükemmel"></label>
         <input type="radio" id="sq-star4" name="ratingServiceQuality" value="4" aria-label="4 yıldız — İyi"><label for="sq-star4" title="İyi"></label>
@@ -628,7 +655,7 @@
     </div>
 
     <div class="field rating">
-      <label><span class="field-name"><span class="refdes"></span>Hizmet Süresi</span> <span class="req" id="serviceDurationReq">(gerekli)</span></label>
+      <label><span class="field-name">Hizmet Süresi</span> <span class="req" id="serviceDurationReq">(gerekli)</span></label>
       <div class="stars" role="radiogroup" aria-label="Hizmet Süresi Puanı">
         <input type="radio" id="sd-star5" name="ratingServiceDuration" value="5" required aria-label="5 yıldız — Mükemmel"><label for="sd-star5" title="Mükemmel"></label>
         <input type="radio" id="sd-star4" name="ratingServiceDuration" value="4" aria-label="4 yıldız — İyi"><label for="sd-star4" title="İyi"></label>
@@ -639,7 +666,7 @@
     </div>
 
     <div class="field rating">
-      <label><span class="field-name"><span class="refdes"></span>İletişim Kalitesi</span> <span class="req" id="communicationReq">(gerekli)</span></label>
+      <label><span class="field-name">İletişim Kalitesi</span> <span class="req" id="communicationReq">(gerekli)</span></label>
       <div class="stars" role="radiogroup" aria-label="İletişim Kalitesi Puanı">
         <input type="radio" id="cm-star5" name="ratingCommunication" value="5" required aria-label="5 yıldız — Mükemmel"><label for="cm-star5" title="Mükemmel"></label>
         <input type="radio" id="cm-star4" name="ratingCommunication" value="4" aria-label="4 yıldız — İyi"><label for="cm-star4" title="İyi"></label>
@@ -650,7 +677,7 @@
     </div>
 
     <div class="field">
-      <label for="reviewText"><span class="field-name"><span class="refdes"></span>Yorum</span> <span class="req" id="reviewReq">(gerekli / en az 15 karakter)</span></label>
+      <label for="reviewText"><span class="field-name">Yorum</span> <span class="req" id="reviewReq">(gerekli / en az 15 karakter)</span></label>
       <!-- maxlength 600 DEĞİL, bilinçli olarak yukarıda: sınır aşıldığında
            sayacın kırmızıya dönmesi ve kişinin silerek 600'e inmesi isteniyor.
            maxlength 600 olsaydı tarayıcı 601. karakteri hiç yazdırmaz, kırmızı
@@ -659,7 +686,7 @@
       <textarea id="reviewText" name="review" required maxlength="2000"></textarea>
     </div>
 
-    <button type="submit" class="submit-btn" id="submitBtn">Yorumu gönder</button>
+    <button type="submit" class="submit-btn" id="submitBtn">Yorumu Gönder</button>
     <p class="status" id="formStatus" role="status"></p>
   </form>
 </main>
