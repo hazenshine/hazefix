@@ -264,8 +264,15 @@
     background: var(--panel);
     border: 1px solid var(--ink);
     border-radius: 6px;
-    outline: none;
-    transition: border-color 0.15s;
+    /* Odak halkası hep VAR ama şeffaf duruyor; odaklanınca yalnızca rengi ve
+       kutuya olan mesafesi değişiyor. Sebep: outline-style'ı none'dan solid'e
+       çevirmek animate EDİLEMEZ, halka anında bitiveriyordu (kullanıcı isteği
+       2026-09-07: "yumuşak bir şekilde gelsin o dış bar"). Renk ve offset ise
+       animate edilebilen özellikler.
+       outline layout'u etkilemediği için kutu boyu yine oynamıyor. */
+    outline: 2px solid transparent;
+    outline-offset: 0;
+    transition: border-color 0.15s, outline-color 0.2s ease, outline-offset 0.2s ease;
   }
 
   /* Çerçeve normal halde de --ink olduğu için odak rengini DEĞİŞTİREREK
@@ -274,7 +281,7 @@
      veriliyor; yıldızların focus göstergesiyle aynı dil.
      outline layout'u etkilemez, yani kutu boyu oynamaz. */
   input[type="text"]:focus, textarea:focus {
-    outline: 2px solid var(--ink);
+    outline-color: var(--ink);
     outline-offset: 2px;
   }
 
@@ -322,13 +329,20 @@
     border: 1px solid var(--ink);
     border-radius: 6px;
     cursor: pointer;
-    outline: none;
-    transition: border-color 0.15s;
+    /* Odak halkası hep VAR ama şeffaf duruyor; odaklanınca yalnızca rengi ve
+       kutuya olan mesafesi değişiyor. Sebep: outline-style'ı none'dan solid'e
+       çevirmek animate EDİLEMEZ, halka anında bitiveriyordu (kullanıcı isteği
+       2026-09-07: "yumuşak bir şekilde gelsin o dış bar"). Renk ve offset ise
+       animate edilebilen özellikler.
+       outline layout'u etkilemediği için kutu boyu yine oynamıyor. */
+    outline: 2px solid transparent;
+    outline-offset: 0;
+    transition: border-color 0.15s, outline-color 0.2s ease, outline-offset 0.2s ease;
   }
 
   .select-trigger:focus-visible,
   .select-trigger.open {
-    outline: 2px solid var(--ink);
+    outline-color: var(--ink);
     outline-offset: 2px;
   }
 

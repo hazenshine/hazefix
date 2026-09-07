@@ -136,12 +136,16 @@
     background: var(--panel);
     border: 1px solid var(--ink);
     border-radius: 6px;
-    outline: none;
-    transition: border-color 0.15s;
+    /* Odak halkası hep var ama şeffaf; odaklanınca rengi ve mesafesi
+       yumuşakça değişiyor. outline-style'ı none'dan solid'e çevirmek animate
+       edilemiyor, halka anında bitiveriyordu. Gerekçe review/index.html'de. */
+    outline: 2px solid transparent;
+    outline-offset: 0;
+    transition: border-color 0.15s, outline-color 0.2s ease, outline-offset 0.2s ease;
   }
 
   input[type="email"]:focus, input[type="password"]:focus {
-    outline: 2px solid var(--ink);
+    outline-color: var(--ink);
     outline-offset: 2px;
   }
 
