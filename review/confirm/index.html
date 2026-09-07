@@ -155,8 +155,8 @@
      korunuyor. */
   .submit-btn {
     width: 100%;
-    background: var(--panel);
-    color: var(--ink);
+    background: var(--ink);
+    color: var(--bg);
     border: 2px solid var(--ink);
     border-radius: 6px;
     padding: 10.5px 20px;
@@ -169,8 +169,8 @@
   }
 
   .submit-btn:hover {
-    background: var(--ink);
-    color: var(--bg);
+    background: var(--panel);
+    color: var(--ink);
   }
   .submit-btn:active { transform: scale(0.96); }
   .submit-btn:disabled { opacity: 0.55; cursor: not-allowed; }
@@ -364,16 +364,17 @@
 
   /* PANELDEKİ BÜTÜN DÜĞMELER TEK STİLDE: varsayılan içi boş (krem zemin,
      lacivert yazı ve çerçeve), imleç üzerine gelince içi doluyor.
-     Kullanıcı isteği 2026-09-08 ve sebebi şuydu: Onayla varsayılan DOLU,
-     Arşivle hover'da DOLU olunca ikisi aynı görünüyordu ve hangisinin
-     üzerinde olduğun anlaşılmıyordu. Artık dolu olan tek şey imlecin
-     üzerinde durduğu düğme.
-     NOT: form sayfası bunun TERSİNİ yapıyor (Gönder varsayılan dolu, hover'da
-     çerçeve) — orası kullanıcının verdiği referans görsele göre ayarlandı ve
-     bilerek öyle kaldı. */
+     Varsayılan DOLU, imleç üzerine gelince içi boşalıyor ve yalnızca çerçeve
+     kalıyor — form sayfasındaki Gönder düğmesiyle aynı yön (kullanıcı isteği
+     2026-09-08).
+     Bir tur bunun tersi denendi (varsayılan boş, hover'da dolu) ve geri
+     alındı. O turun sebebi şuydu: Onayla DOLU, Arşivle ise .ghost varyantıyla
+     BOŞtu; Arşivle'ye gelince dolup Onayla'ya benziyordu. Asıl sorun iki ayrı
+     varyantın olmasıydı — .ghost kaldırılıp hepsi tek stile inince yön
+     serbest kaldı ve dolu-varsayılana dönüldü. **Üçüncü bir varyant ekleme.** */
   .act-btn {
-    background: var(--panel);
-    color: var(--ink);
+    background: var(--ink);
+    color: var(--bg);
     border: 2px solid var(--ink);
     border-radius: 6px;
     /* Çerçeve 2px olduğu için dikey padding 10'dan 8'e indi — buton eski
@@ -387,8 +388,8 @@
   }
 
   .act-btn:hover {
-    background: var(--ink);
-    color: var(--bg);
+    background: var(--panel);
+    color: var(--ink);
   }
   .act-btn:active { transform: scale(0.96); }
   .act-btn:disabled { opacity: 0.55; cursor: not-allowed; }
