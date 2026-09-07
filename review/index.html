@@ -52,13 +52,13 @@
     --field-bg: #efe4d2;
     --text-main: #241d12;
     --text-muted: #4e4436;
-    /* --copper artık YALNIZCA modal "Tamam" butonunun zemini. Kutu çerçeveleri
-       ve "Dosya Seç" 2026-09-07'de laciverte (--ink) geçti; sayfada kahverengi
-       ÇERÇEVE kalmadı. */
+    /* KAHVERENGİ AİLESİ BU DOSYADA TAMAMEN ÖLÜ (2026-09-07). Sırayla laciverte
+       geçtiler: kutu çerçeveleri, "Dosya Seç", seçim listesi penceresi ve
+       vurgusu, uyarı penceresi ve "Tamam" butonu. Sayfada kahverengi kalmadı.
+       Token'lar yine de duruyor: bu blok onay paneliyle BAYT BAYT kopya ve
+       orada .tab / .rev kuralları hâlâ kullanıyor. Formda kullanmadan önce
+       "bu gerçekten kahverengi mi olmalı" diye sor. */
     --copper: #824b22;
-    /* --copper-dim bu dosyada 2026-09-07'den beri KULLANILMIYOR: "Dosya Seç"
-       butonunun kenarlığıydı, o da laciverte geçti. Token bloğu onay paneliyle
-       kopya olduğu için duruyor — orada .tab:hover hâlâ kullanıyor. */
     --copper-dim: #9e6d3d;
     --copper-bright: #6b3c18;
     --copper-wash: rgba(130, 75, 34, 0.14);
@@ -68,11 +68,13 @@
        dolu yıldız içi dolu — bu yüzden iki token da aynı değerde.
        Renk geçmişi: #07303e -> #1c304e (logonun mürekkep rengi) -> #ff5d00
        (2026-09-07, kullanıcı isteği).
-       ÖLÇÜM NOTU: #ff5d00, #f5eee3 zeminde 2.67:1. Grafik öğeler için WCAG
-       eşiği 3:1, yani bunun ALTINDA — kullanıcı bilgilendirilerek seçti.
-       Dolu/boş ayrımı renge değil biçime dayandığı için puan yine okunuyor. */
-    --star-filled: #ff5d00;
-    --star-empty: #ff5d00;
+       #ff5d00 bir gün denendi ve kullanıcı "inanılmaz cırtlak" buldu; sebebi
+       doygunluğunun %100 olmasıydı, temanın geri kalanı %58-63 arasında.
+       #d95a1a doygunluğu %78.6'ya çekiyor, rengi turuncu bırakıyor (hue 20°,
+       temanın kahvesi 25.6°) ve kontrastı 2.67:1'den 3.36:1'e taşıyor —
+       yani grafik öğe eşiğini (3:1) de artık geçiyor. */
+    --star-filled: #d95a1a;
+    --star-empty: #d95a1a;
     /* Yıldız biçimleri MASKE olarak duruyor, resim olarak değil: maskede rengi
        background-color veriyor, yani yukarıdaki iki token yıldızın rengini
        yönetmeye devam ediyor. SVG'nin içindeki "black" sadece maskenin kendisi
@@ -84,6 +86,12 @@
        başlığı ve Gönder butonu (2026-09-07, kullanıcı isteği). Yıldızlar da
        bu renkteydi, aynı gün turuncuya geçtiler. Ölçüldü: zeminde 11.52:1. */
     --ink: #1c304e;
+    /* --ink'in yarı saydam hâli: seçim listesinde vurgulanan satırın zemini
+       (2026-09-07, kullanıcı isteği — orası --copper-wash ile kahverengiydi).
+       Yan etkisi iyi oldu: bakır wash üzerinde "(gerekli)" tonundaki yazı
+       4.02:1 ile AA'nın altındaydı, lacivert wash üzerinde 4.75:1 ile
+       geçiyor. Yani bilerek kabul edilmiş o ihlal kendiliğinden kapandı. */
+    --ink-wash: rgba(28, 48, 78, 0.14);
     --signal: #206541;
     --danger: #9c3628;
     --font-body: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
@@ -343,7 +351,7 @@
     right: 0;
     top: calc(100% + 6px);
     background: var(--panel);
-    border: 1px solid var(--panel-border);
+    border: 1px solid var(--ink);
     border-radius: 6px;
     list-style: none;
     margin: 0;
@@ -385,7 +393,7 @@
      rozetle birebir aynılığı bozar. */
   .select-options li:hover,
   .select-options li.active {
-    background: var(--copper-wash);
+    background: var(--ink-wash);
     color: var(--danger);
   }
 
@@ -552,7 +560,7 @@
 
   .modal-box {
     background: var(--panel);
-    border: 1px solid var(--panel-border);
+    border: 1px solid var(--ink);
     border-radius: 10px;
     padding: 26px 28px;
     max-width: 340px;
@@ -573,21 +581,28 @@
     line-height: 1.5;
   }
 
+  /* Gönder butonuyla AYNI dil (kullanıcı isteği 2026-09-07): normalde dolu
+     lacivert, üzerine gelince yalnızca çerçeve kalıyor ve yazı laciverte
+     dönüyor. Çerçeve normal halde de var (2px, zeminle aynı renkte) — yoksa
+     hover'da buton 4px büyür. Dikey padding bu yüzden 10'dan 8'e indi. */
   .modal-ok-btn {
-    background: var(--copper);
-    color: var(--on-copper);
-    border: none;
+    background: var(--ink);
+    color: var(--bg);
+    border: 2px solid var(--ink);
     border-radius: 6px;
-    padding: 10px 30px;
+    padding: 8px 28px;
     font-size: 15px;
     font-weight: 700;
     letter-spacing: 0.01em;
     font-family: inherit;
     cursor: pointer;
-    transition: background 0.15s, transform 0.1s ease;
+    transition: background 0.15s, color 0.15s, transform 0.1s ease;
   }
 
-  .modal-ok-btn:hover { background: var(--copper-bright); }
+  .modal-ok-btn:hover {
+    background: var(--bg);
+    color: var(--ink);
+  }
   .modal-ok-btn:active { transform: scale(0.96); }
 </style>
 
