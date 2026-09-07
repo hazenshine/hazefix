@@ -68,13 +68,23 @@
        dolu yıldız içi dolu — bu yüzden iki token da aynı değerde.
        Renk geçmişi: #07303e -> #1c304e (logonun mürekkep rengi) -> #ff5d00
        (2026-09-07, kullanıcı isteği).
-       #ff5d00 bir gün denendi ve kullanıcı "inanılmaz cırtlak" buldu; sebebi
-       doygunluğunun %100 olmasıydı, temanın geri kalanı %58-63 arasında.
-       #d95a1a doygunluğu %78.6'ya çekiyor, rengi turuncu bırakıyor (hue 20°,
-       temanın kahvesi 25.6°) ve kontrastı 2.67:1'den 3.36:1'e taşıyor —
-       yani grafik öğe eşiğini (3:1) de artık geçiyor. */
-    --star-filled: #d95a1a;
-    --star-empty: #d95a1a;
+       Renk --accent'ten geliyor; gerekçesi ve ölçümü orada. İki token ayrı
+       duruyor ki yıldızlar ileride vurgudan ayrışmak isterse yer hazır olsun. */
+    /* Sıcak aksan: yıldızlar VE seçim listesinde vurgulanan satırın yazısı
+       (kullanıcı isteği 2026-09-07: "yıldızda kullandığımız turuncu renk
+       olsunlar üzerine geldiğimizde"). Tek token, çünkü kullanıcı ikisinin
+       aynı olmasını istedi — biri değişirse diğeri takip etsin.
+       #ff5d00 bir gün denendi, "inanılmaz cırtlak" bulundu; doygunluğu %100'dü,
+       temanın geri kalanı %58-63 arasında. #d95a1a doygunluğu %78.6'ya çekiyor.
+       ÖLÇÜM: yıldızlar (grafik öğe, eşik 3) panel zemininde 3.36:1 ✅.
+       Seçim listesi vurgusu ise --ink-wash zemininde 2.60:1 — AA metin eşiği
+       4.5'in ALTINDA, kullanıcı bilgilendirilerek seçti. Karşılığında vurgu
+       çok daha görünür oldu: normal satırdan farkı 2.36:1'den 4.31:1'e çıktı.
+       Yükseltmek gerekirse tonu koyulaştırmak gerekir ama o zaman yıldızlarla
+       aynı renk olmaktan çıkar. */
+    --accent: #d95a1a;
+    --star-filled: var(--accent);
+    --star-empty: var(--accent);
     /* Yıldız biçimleri MASKE olarak duruyor, resim olarak değil: maskede rengi
        background-color veriyor, yani yukarıdaki iki token yıldızın rengini
        yönetmeye devam ediyor. SVG'nin içindeki "black" sadece maskenin kendisi
@@ -392,8 +402,8 @@
     color: var(--text-main);
   }
 
-  /* Vurgulanan satırın yazısı "(gerekli)" rozetiyle AYNI renk (--danger),
-     kullanıcı isteği 2026-09-07. İki tur sürdü:
+  /* Vurgulanan satırın yazısı yıldızlarla AYNI renk (--accent), kullanıcı
+     isteği 2026-09-07 — önce "(gerekli)" rozetinin bordosuydu. İki tur sürdü:
        1. Başlangıçta --signal yeşiliydi — siteye yabancı duruyordu.
        2. Sonra logonun laciverti (#1c304e) denendi: kullanıcı "hiç görünmüyor"
           dedi ve haklıydı — normal satır rengi #241d12 ile neredeyse aynı
@@ -408,7 +418,7 @@
   .select-options li:hover,
   .select-options li.active {
     background: var(--ink-wash);
-    color: var(--danger);
+    color: var(--accent);
   }
 
   .dropzone input[type="file"] {
