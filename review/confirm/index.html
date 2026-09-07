@@ -30,14 +30,8 @@
     --panel-border: #e2ceac;
     --panel-edge: transparent;
     --panel-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-    --field-bg: #efe4d2;
     --text-main: #241d12;
     --text-muted: #4e4436;
-    --copper: #824b22;
-    --copper-dim: #9e6d3d;
-    --copper-bright: #6b3c18;
-    --copper-wash: rgba(130, 75, 34, 0.14);
-    --on-copper: #f7efe2;
     /* Sıcak aksan: yıldızlar (ve formda seçim listesi vurgusu). Gerekçe ve
        ölçüm review/index.html'de. */
     --accent: #d95a1a;
@@ -258,8 +252,7 @@
 
   /* Yorum kartları da form kutularıyla aynı dile çekildi (2026-09-07):
      içi panelle aynı renk, ayıran tek şey lacivert çerçeve. Böylece
-     --field-bg bu dosyada da kullanılmaz oldu; token :root'ta duruyor çünkü
-     blok form dosyasıyla kopya. */
+     --field-bg token'ı 2026-09-08'de tamamen kaldırıldı, kullanan kalmamıştı. */
   .rev {
     border: 1px solid var(--ink);
     border-radius: 10px;
