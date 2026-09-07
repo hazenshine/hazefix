@@ -1131,9 +1131,20 @@
   // innerHTML kullanılıyor ama içeri giren metnin tamamı BİZİM yazdığımız
   // sabit cümle; ziyaretçiden gelen hiçbir şey buraya konmuyor (sayı hariç,
   // o da length'ten geliyor). Yoruma ait serbest metni buraya basma.
+  // Pencere açılırken odak MUTLAKA içeri taşınmalı.
+  //
+  // Aksi halde odak, pencereyi açan "Yorumu Gönder" düğmesinde kalıyor: düğme
+  // arkada basılı/seçili görünüyor (kullanıcı şikâyeti 2026-09-08) ve klavyeyle
+  // gezinen biri, üstte bir pencere varken arka plandaki formda dolaşıyor.
+  // Kapanınca odak düğmeye geri veriliyor — yoksa <body>'ye düşer ve klavye
+  // kullanıcısı sayfada yerini kaybeder.
+  let modaliAcan = null;
+
   function showModal(html) {
+    modaliAcan = document.activeElement;
     modalMsg.innerHTML = html;
     validationModal.classList.add("open");
+    modalOkBtn.focus();
   }
 
   function showValidationModal(missing) {
@@ -1144,6 +1155,10 @@
 
   function hideValidationModal() {
     validationModal.classList.remove("open");
+    // Odağı pencereyi açan öğeye geri ver; o gitmişse forma düşme, hiçbir şey
+    // yapma (odak <body>'de kalır, en azından sayfa dışına kaçmaz).
+    if (modaliAcan && document.contains(modaliAcan)) modaliAcan.focus();
+    modaliAcan = null;
   }
 
   modalOkBtn.addEventListener("click", hideValidationModal);

@@ -1652,8 +1652,16 @@
   storyFrame.querySelector(".story-dead.bottom").style.height =
     `${(STORY.deadBottom / STORY.h) * 100}%`;
 
+  // Formdaki uyarı penceresiyle aynı kural: pencere açılırken odak İÇERİ
+  // taşınıyor, kapanırken açan düğmeye geri veriliyor. Yoksa odak arkadaki
+  // "Story görseli" düğmesinde kalıyor — düğme basılı görünüyor ve klavyeyle
+  // gezinen biri, üstte pencere varken arka plandaki listede dolaşıyor.
+  let storyyiAcan = null;
+
   function storyKapat() {
     storyOverlay.classList.remove("open");
+    if (storyyiAcan && document.contains(storyyiAcan)) storyyiAcan.focus();
+    storyyiAcan = null;
     // Bellekte tutulan görseli bırak: 1080x1920 PNG'ler birikirse sekme şişer.
     if (storyUrl) { URL.revokeObjectURL(storyUrl); storyUrl = null; }
   }
@@ -1679,6 +1687,8 @@
         : "";
 
       storyOverlay.classList.add("open");
+      storyyiAcan = btn;
+      storyDownload.focus();   // pencerenin ana eylemi
     } catch (err) {
       console.error(err);
       alert("Story görseli hazırlanamadı. Sayfayı yenileyip tekrar deneyiniz.");
