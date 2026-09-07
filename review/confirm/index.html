@@ -16,7 +16,7 @@
 <!-- Başlık fontu Baloo 2 600. Fredoka 2026-09-07'de bırakıldı: içinde ğ Ğ ş Ş İ
      glifleri yok, "Tuğra" gibi isimlerde o harfler başka bir fonta düşüyordu.
      Ayrıntı ve ölçüm review/index.html'deki aynı satırın yorumunda. -->
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   /* Token bloğu review/index.html ile AYNI — bilinçli kopya.
      CSS'i ortak bir styles.css'e çıkarma işi yol haritasının 4. maddesine
@@ -50,7 +50,7 @@
     --ink: #1c304e;
     --signal: #206541;
     --danger: #9c3628;
-    --font-body: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    --font-body: "Quicksand", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
     --font-heading: "Baloo 2", var(--font-body);
   }
 
@@ -132,7 +132,7 @@
      piksel bilinçli, gerekçe review/index.html'de. */
   input[type="email"], input[type="password"] {
     width: 100%;
-    padding: 10.5px 13px;
+    padding: 11.25px 13px;
     font-size: 16px;
     font-family: inherit;
     color: var(--text-main);
@@ -1186,9 +1186,9 @@
       const TR_ORNEK = "ĞŞİIÇÖÜğşıiçöü";
       await Promise.all([
         document.fonts.load("600 92px 'Baloo 2'", TR_ORNEK),
-        document.fonts.load("400 60px 'Nunito Sans'", TR_ORNEK),
-        document.fonts.load("600 30px 'Nunito Sans'", TR_ORNEK),
-        document.fonts.load("700 26px 'Nunito Sans'", TR_ORNEK),
+        document.fonts.load("400 60px 'Quicksand'", TR_ORNEK),
+        document.fonts.load("600 30px 'Quicksand'", TR_ORNEK),
+        document.fonts.load("700 26px 'Quicksand'", TR_ORNEK),
       ]).catch(() => {});
       await document.fonts.ready;
     }
@@ -1257,7 +1257,7 @@
     // sebepsiz bir boşluk kalıyor (kullanıcı: "tırnağın altındaki boşluk çok
     // fazla"). Bu yüzden glifin gerçek sınırı ölçülüyor; ölçüm desteklenmezse
     // 0.45 oranına düşülüyor.
-    ctx.font = `600 ${tirnakBoyu}px "Baloo 2", "Nunito Sans", sans-serif`;
+    ctx.font = `600 ${tirnakBoyu}px "Baloo 2", "Quicksand", sans-serif`;
     const tirnakOlcu = ctx.measureText("“");
     const tirnakH = tirnakOlcu.actualBoundingBoxDescent || tirnakBoyu * 0.45;
 
@@ -1361,9 +1361,9 @@
     // bilmek zorunda. Sonraya bırakıldığında sarma 46'yı, çizim ise küçülmüş
     // puntoyu kullanıyordu ve fotoğraf metnin üstüne biniyordu.
     const isimSig = sigdir(ctx, String(row["İsim"] || ""), yatayFoto ? darG : icG,
-      (p) => `600 ${p}px "Baloo 2", "Nunito Sans", sans-serif`, isimBoyu, 28);
+      (p) => `600 ${p}px "Baloo 2", "Quicksand", sans-serif`, isimBoyu, 28);
     const metaSig = meta
-      ? sigdir(ctx, meta, icG, (p) => `400 ${p}px "Nunito Sans", sans-serif`, metaBoyu, 26)
+      ? sigdir(ctx, meta, icG, (p) => `400 ${p}px "Quicksand", sans-serif`, metaBoyu, 26)
       : { punto: metaBoyu, metin: "" };
 
     const ustBlokTahmin = Math.max(0, tirnakH - tirnakKaydir) + ARALIK_UST + STORY.textSize * 0.2;
@@ -1449,7 +1449,7 @@
     };
 
     for (; punto >= STORY.minText; punto -= 1) {
-      ctx.font = `400 ${punto}px "Nunito Sans", sans-serif`;
+      ctx.font = `400 ${punto}px "Quicksand", sans-serif`;
       satirlar = sarmaliBol(punto);
       if (icerikYuksekligi(satirlar.length, punto) <= enFazlaIcerik) break;
     }
@@ -1471,11 +1471,11 @@
     // Kartın yüksekliği içeriğe, içeriğin konumu da kartın yerine bağlı; bu
     // döngüyü kırmak için her şey blok başlangıcı 0 kabul edilerek hesaplanıyor,
     // kart yüksekliği çıkınca hepsi birden `ofs` kadar aşağı kaydırılıyor.
-    ctx.font = `400 ${punto}px "Nunito Sans", sans-serif`;
+    ctx.font = `400 ${punto}px "Quicksand", sans-serif`;
     const ilkOlcu = ctx.measureText(satirlar[0] || "");
     const sonOlcu = ctx.measureText(satirlar[satirlar.length - 1] || "");
 
-    ctx.font = `600 ${isimSig.punto}px "Baloo 2", "Nunito Sans", sans-serif`;
+    ctx.font = `600 ${isimSig.punto}px "Baloo 2", "Quicksand", sans-serif`;
     const isimOlcu = ctx.measureText(isimSig.metin);
 
     // actualBoundingBoxAscent: çizim noktasından glifin ÜST kenarına olan
@@ -1525,11 +1525,11 @@
 
     // --- içerik: yukarıda hesaplanan göreli konumlar + kaydırma ---
     ctx.fillStyle = renk.copper;
-    ctx.font = `600 ${tirnakBoyu}px "Baloo 2", "Nunito Sans", sans-serif`;
+    ctx.font = `600 ${tirnakBoyu}px "Baloo 2", "Quicksand", sans-serif`;
     ctx.fillText("“", icX, ofs - tirnakKaydir);
 
     ctx.fillStyle = renk.text;
-    ctx.font = `400 ${punto}px "Nunito Sans", sans-serif`;
+    ctx.font = `400 ${punto}px "Quicksand", sans-serif`;
     satirlar.forEach((satir, i) => {
       ctx.fillText(satir, icX, ofs + rMetinY + i * punto * STORY.lineHeight);
     });
@@ -1549,12 +1549,12 @@
     }
 
     ctx.fillStyle = renk.text;
-    ctx.font = `600 ${isimSig.punto}px "Baloo 2", "Nunito Sans", sans-serif`;
+    ctx.font = `600 ${isimSig.punto}px "Baloo 2", "Quicksand", sans-serif`;
     ctx.fillText(isimSig.metin, icX, ofs + rIsimY);
 
     if (meta) {
       ctx.fillStyle = renk.muted;
-      ctx.font = `400 ${metaSig.punto}px "Nunito Sans", sans-serif`;
+      ctx.font = `400 ${metaSig.punto}px "Quicksand", sans-serif`;
       ctx.fillText(metaSig.metin, icX, ofs + rMetaY);
     }
 
@@ -1566,13 +1566,13 @@
     // hizada durur, satırlar dağınık görünürdü. Bu yüzden başlangıç noktası
     // EN UZUN etikete göre bir kez hesaplanıyor: hem etiketin yanındalar
     // hem de üçü aynı hizada.
-    ctx.font = `600 ${kritBoyu}px "Nunito Sans", sans-serif`;
+    ctx.font = `600 ${kritBoyu}px "Quicksand", sans-serif`;
     const enUzunEtiket = Math.max(...CRITERIA.map(({ label }) => ctx.measureText(label).width));
     const yildizBasi = icX + enUzunEtiket + 40;
 
     CRITERIA.forEach(({ column, label }) => {
       ctx.fillStyle = renk.muted;
-      ctx.font = `600 ${kritBoyu}px "Nunito Sans", sans-serif`;
+      ctx.font = `600 ${kritBoyu}px "Quicksand", sans-serif`;
       ctx.fillText(label, icX, y + (kritSatirH - kritBoyu) / 2 - 2);
 
       const puan = Number(row[column]) || 0;
@@ -1601,7 +1601,7 @@
     // boşluğu (kritAra) da eklemiş durumda; tarihin kendi boşluğu ondan
     // bağımsız olsun diye o pay geri çıkarılıyor.
     if (tarihMetni) {
-      ctx.font = `400 ${tarihBoyu}px "Nunito Sans", sans-serif`;
+      ctx.font = `400 ${tarihBoyu}px "Quicksand", sans-serif`;
       ctx.fillStyle = renk.muted;
       ctx.fillText(tarihMetni, icX, y - kritAra + TARIH_UST);
     }
