@@ -145,24 +145,31 @@
     outline-offset: 2px;
   }
 
+  /* DİKKAT: bu kuralda bir ara İKİ border bildirimi kaldı — üstte
+     "2px solid var(--ink)", altta eskiden kalan "border: none". Sonra gelen
+     kazandığı için çerçeve hiç uygulanmıyordu ve düğme, zemini krem olduğunda
+     tamamen kayboluyordu (kullanıcı: "arkaplan rengiyle aynı, border yok").
+     Ölçüm de kaçırmıştı, çünkü border-COLOR bakılmıştı: renk, style "none"
+     olsa bile tanımlı kalıyor. Bir çerçeveyi doğrularken border-style'a da bak.
+     Dikey padding 12.5 -> 10.5: çerçeve 2px yer kapladığı için yükseklik
+     korunuyor. */
   .submit-btn {
     width: 100%;
     background: var(--ink);
     color: var(--bg);
     border: 2px solid var(--ink);
-    padding: 12.5px 20px;
+    border-radius: 6px;
+    padding: 10.5px 20px;
     font-size: 16px;
     font-weight: 700;
     letter-spacing: 0.01em;
     font-family: inherit;
-    border: none;
-    border-radius: 6px;
     cursor: pointer;
-    transition: background 0.15s, opacity 0.15s, transform 0.1s ease;
+    transition: background 0.15s, color 0.15s, opacity 0.15s, transform 0.1s ease;
   }
 
   .submit-btn:hover {
-    background: var(--bg);
+    background: var(--panel);
     color: var(--ink);
   }
   .submit-btn:active { transform: scale(0.96); }
@@ -355,13 +362,23 @@
     flex-wrap: wrap;
   }
 
+  /* PANELDEKİ BÜTÜN DÜĞMELER TEK STİLDE: varsayılan içi boş (krem zemin,
+     lacivert yazı ve çerçeve), imleç üzerine gelince içi doluyor.
+     Varsayılan DOLU, imleç üzerine gelince içi boşalıyor ve yalnızca çerçeve
+     kalıyor — form sayfasındaki Gönder düğmesiyle aynı yön (kullanıcı isteği
+     2026-09-08).
+     Bir tur bunun tersi denendi (varsayılan boş, hover'da dolu) ve geri
+     alındı. O turun sebebi şuydu: Onayla DOLU, Arşivle ise .ghost varyantıyla
+     BOŞtu; Arşivle'ye gelince dolup Onayla'ya benziyordu. Asıl sorun iki ayrı
+     varyantın olmasıydı — .ghost kaldırılıp hepsi tek stile inince yön
+     serbest kaldı ve dolu-varsayılana dönüldü. **Üçüncü bir varyant ekleme.** */
   .act-btn {
     background: var(--ink);
     color: var(--bg);
     border: 2px solid var(--ink);
     border-radius: 6px;
     /* Çerçeve 2px olduğu için dikey padding 10'dan 8'e indi — buton eski
-       yüksekliğinde kalsın diye. Üç düğme de (dolu/ghost) aynı kutuda. */
+       yüksekliğinde kalsın diye. Bütün düğmeler aynı kutuda. */
     padding: 8px 22px;
     font-size: 15px;
     font-weight: 700;
@@ -371,7 +388,7 @@
   }
 
   .act-btn:hover {
-    background: var(--bg);
+    background: var(--panel);
     color: var(--ink);
   }
   .act-btn:active { transform: scale(0.96); }
@@ -379,22 +396,27 @@
 
   /* Onayı geri alma yıkıcı değil ama olumlu da değil: dolu bakır düğme
      "yapılacak asıl iş" hissi verir, bu yüzden ikincil (çerçeveli) duruyor. */
-  /* İKİNCİL düğme: Arşivle, Story görseli, Kılavuzu gizle/göster, Kapat,
-     Onayı geri al, Arşivden çıkar. Hepsi aynı görünümde — önceden "light"
-     diye üçüncü bir varyant vardı ve hover'ı hâlâ kahverengiydi; üç farklı
-     buton görünümü yan yana dağınık duruyordu (kullanıcı: "düzgün değil").
-     Artık yalnızca iki hal var: dolu (birincil) ve çerçeveli (ikincil). */
-  .act-btn.ghost {
-    background: var(--panel);
-    color: var(--ink);
-    border: 2px solid var(--ink);
-  }
-
-  .act-btn.ghost:hover { background: var(--ink); color: var(--bg); }
 
   /* Arşivle: Onayla'nın açık renklisi (kullanıcı isteği). Aynı bakır ailesinden
      ama dolgusu yıkanmış — yan yana dururken hangisinin asıl eylem olduğu
      belli olsun, ikisi de eşit ağırlıkta görünmesin. */
+
+
+  /* DÜĞMELERİN ODAK HALKASI — tarayıcının kendi halkasına bırakılmamalı.
+     Firefox'ta o halka belirgin çiziliyor ve sekmeye TIKLADIKTAN sonra da
+     kaldığı için "Onaylı otomatik seçili geliyor" gibi görünüyordu
+     (kullanıcı şikâyeti 2026-09-08; ölçüldü: .tab için hiçbir :focus kuralı
+     yoktu, tarayıcı devreye giriyordu).
+     :focus-visible bilinçli — fareyle tıklamada TETİKLENMEZ, yalnızca klavye
+     ile gezinirken çıkar. Yani hem şikâyet çözülüyor hem klavye erişilebilirliği
+     korunuyor. Kutulardaki halkayla aynı dil (2px, 2px offset). */
+  .tab:focus-visible,
+  .act-btn:focus-visible,
+  .submit-btn:focus-visible,
+  .link-btn:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+  }
 
   .row-status { font-size: 14px; color: var(--text-muted); }
   .row-status.error { color: var(--danger); }
@@ -429,7 +451,7 @@
 
   .story-box {
     background: var(--panel);
-    border: 1px solid var(--panel-border);
+    border: 1px solid var(--ink);
     border-radius: 15px;
     box-shadow: var(--panel-shadow);
     padding: 24px;
@@ -573,8 +595,8 @@
 
     <div class="story-actions">
       <a class="act-btn" id="storyDownload" download>PNG indir</a>
-      <button type="button" class="act-btn ghost" id="storyToggleGuides">Kılavuzu gizle</button>
-      <button type="button" class="act-btn ghost" id="storyClose">Kapat</button>
+      <button type="button" class="act-btn" id="storyToggleGuides">Kılavuzu gizle</button>
+      <button type="button" class="act-btn" id="storyClose">Kapat</button>
     </div>
 
     <!-- Telefonda `download` niteliği görseli Dosyalar'a indiriyor, Fotoğraflar'a
@@ -861,12 +883,12 @@
     // çıkarılan yorum bu yüzden Onaylı'ya değil Bekleyen'e döner —
     // yeniden karar verilsin.
     const buttons = row["Arşiv"]
-      ? [{ text: "Arşivden çıkar", cls: "act-btn ghost", busy: "Çıkarılıyor…", patch: { "Arşiv": false } }]
+      ? [{ text: "Arşivden çıkar", cls: "act-btn", busy: "Çıkarılıyor…", patch: { "Arşiv": false } }]
       : [
           row["Onay"]
-            ? { text: "Onayı geri al", cls: "act-btn ghost", busy: "Geri alınıyor…", patch: { "Onay": false } }
+            ? { text: "Onayı geri al", cls: "act-btn", busy: "Geri alınıyor…", patch: { "Onay": false } }
             : { text: "Onayla", cls: "act-btn", busy: "Onaylanıyor…", patch: { "Onay": true } },
-          { text: "Arşivle", cls: "act-btn ghost", busy: "Arşivleniyor…", patch: { "Arşiv": true, "Onay": false } },
+          { text: "Arşivle", cls: "act-btn", busy: "Arşivleniyor…", patch: { "Arşiv": true, "Onay": false } },
         ];
 
     const btnEls = buttons.map((spec) => {
@@ -885,7 +907,7 @@
     if (row["Onay"] && !row["Arşiv"]) {
       const storyBtn = document.createElement("button");
       storyBtn.type = "button";
-      storyBtn.className = "act-btn ghost";
+      storyBtn.className = "act-btn";
       storyBtn.textContent = "Story görseli";
       storyBtn.addEventListener("click", () => storyAc(row, storyBtn));
       actions.appendChild(storyBtn);

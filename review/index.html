@@ -537,6 +537,23 @@
   .submit-btn:active { transform: scale(0.96); }
   .submit-btn:disabled { opacity: 0.55; cursor: not-allowed; }
 
+
+  /* DÜĞMELERİN ODAK HALKASI — tarayıcının kendi halkasına bırakılmamalı.
+     Firefox'ta o halka belirgin çiziliyor ve sekmeye TIKLADIKTAN sonra da
+     kaldığı için "Onaylı otomatik seçili geliyor" gibi görünüyordu
+     (kullanıcı şikâyeti 2026-09-08; ölçüldü: .tab için hiçbir :focus kuralı
+     yoktu, tarayıcı devreye giriyordu).
+     :focus-visible bilinçli — fareyle tıklamada TETİKLENMEZ, yalnızca klavye
+     ile gezinirken çıkar. Yani hem şikâyet çözülüyor hem klavye erişilebilirliği
+     korunuyor. Kutulardaki halkayla aynı dil (2px, 2px offset). */
+  .tab:focus-visible,
+  .act-btn:focus-visible,
+  .submit-btn:focus-visible,
+  .link-btn:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+  }
+
   .status {
     min-height: 19px;
     font-size: 14px;
