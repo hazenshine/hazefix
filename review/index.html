@@ -784,6 +784,32 @@
       detectSessionInUrl: false,
     },
   });
+  // Yüklenen görsele çakışmayan bir dosya adı üretir.
+  //
+  // crypto.randomUUID DOĞRUDAN ÇAĞRILAMAZ: yalnızca "güvenli bağlam"da tanımlı,
+  // yani HTTPS ya da localhost. Siteyi yerel ağdaki bir IP üzerinden (örn.
+  // http://192.168.1.x:4173, telefondan test ederken) açınca undefined oluyor
+  // ve fotoğraflı gönderim "Yükleme sırasında bir şeyler ters gitti" hatasıyla
+  // düşüyor — 2026-09-07'de gerçekten yaşandı ve ölçülerek doğrulandı
+  // (isSecureContext false, typeof crypto.randomUUID === "undefined").
+  // Aynı eksik eski tarayıcılarda da var (Safari 15.4 / Chrome 92 öncesi).
+  //
+  // getRandomValues ise güvenli bağlam istemiyor, o yüzden yedek ondan
+  // türetiliyor ve çıktı yine UUID v4 biçiminde — depodaki mevcut dosya
+  // adlarıyla aynı desende kalsın diye.
+  function benzersizAd() {
+    if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
+    if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+      const b = crypto.getRandomValues(new Uint8Array(16));
+      b[6] = (b[6] & 0x0f) | 0x40;   // sürüm 4
+      b[8] = (b[8] & 0x3f) | 0x80;   // varyant
+      const h = Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
+      return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+    }
+    // Son çare: kriptografik rastgelelik yoksa bile çakışmayan bir ad üret.
+    return `${Date.now().toString(16)}-${Math.random().toString(16).slice(2, 10)}`;
+  }
+
   const MAX_BYTES = 5 * 1024 * 1024;
   const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
@@ -1198,7 +1224,7 @@
 
       if (file) {
         const ext = file.name.split(".").pop();
-        const path = `${crypto.randomUUID()}.${ext}`;
+        const path = `${benzersizAd()}.${ext}`;
         const { error: uploadError } = await supabaseClient
           .storage.from("review-images")
           .upload(path, file, { cacheControl: "3600", upsert: false });
