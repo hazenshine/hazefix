@@ -52,9 +52,13 @@
     --field-bg: #efe4d2;
     --text-main: #241d12;
     --text-muted: #4e4436;
+    /* --copper artık YALNIZCA modal "Tamam" butonunun zemini. Kutu çerçeveleri
+       ve "Dosya Seç" 2026-09-07'de laciverte (--ink) geçti; sayfada kahverengi
+       ÇERÇEVE kalmadı. */
     --copper: #824b22;
-    /* Koyulaştırıldı: dosya seç butonunun kenarlığı bu renkte ve yeni zeminde
-       2.90:1'e düşüyordu. Arayüz bileşeni kenarlıkları için WCAG eşiği 3:1. */
+    /* --copper-dim bu dosyada 2026-09-07'den beri KULLANILMIYOR: "Dosya Seç"
+       butonunun kenarlığıydı, o da laciverte geçti. Token bloğu onay paneliyle
+       kopya olduğu için duruyor — orada .tab:hover hâlâ kullanıyor. */
     --copper-dim: #9e6d3d;
     --copper-bright: #6b3c18;
     --copper-wash: rgba(130, 75, 34, 0.14);
@@ -235,11 +239,12 @@
      (kullanıcı isteği, 2026-09-07: "dikdörtgenlerin içinin renkli olması gözüme
      batıyor"). Önce kutular --field-bg ile zeminden bir tık koyuydu; zemin
      açılınca o fark daha da göze çarpar oldu.
-     Çerçeve --copper. Bu renk başta alan etiketlerindeki .refdes madde
-     işaretiyle eşleşsin diye seçilmişti; o noktalar 2026-09-07'de kullanıcı
-     isteğiyle KALDIRILDI, çerçeve rengi yerinde bırakıldı — kutuları zeminden
-     ayıran tek şey o ve sayfadaki tek sıcak aksan.
-     Ölçüldü: #824b22 çerçeve, #f5eee3 zeminde 6.12:1 (arayüz eşiği 3).
+     Çerçeve --ink (#1c304e). Renk geçmişi: önce --copper'dı, çünkü alan
+     etiketlerindeki .refdes madde işaretiyle eşleşsin isteniyordu; o noktalar
+     2026-09-07'de kaldırıldı ve aynı gün çerçeveler de laciverte çekildi
+     (kullanıcı isteği) — böylece başlık, gönder butonu ve bütün çerçeveler tek
+     renkte buluşuyor. Ölçüldü: #1c304e çerçeve, #f5eee3 zeminde 11.52:1
+     (arayüz bileşeni eşiği 3). Sayfada kahverengi çerçeve KALMADI.
      --field-bg artık YALNIZCA onay panelindeki .rev yorum kartlarında
      kullanılıyor; token bloğu iki dosyada kopya olduğu için burada da duruyor. */
   input[type="text"], textarea {
@@ -249,14 +254,20 @@
     font-family: inherit;
     color: var(--text-main);
     background: var(--panel);
-    border: 1px solid var(--copper);
+    border: 1px solid var(--ink);
     border-radius: 6px;
     outline: none;
     transition: border-color 0.15s;
   }
 
+  /* Çerçeve normal halde de --ink olduğu için odak rengini DEĞİŞTİREREK
+     göstermek artık mümkün değil — 2026-09-07'de çerçeveler laciverte
+     çekilince bu kural sessizce işlevsiz kalmıştı. Odak dışarıdaki halkayla
+     veriliyor; yıldızların focus göstergesiyle aynı dil.
+     outline layout'u etkilemez, yani kutu boyu oynamaz. */
   input[type="text"]:focus, textarea:focus {
-    border-color: var(--copper);
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
   }
 
   textarea { min-height: 130px; resize: vertical; line-height: 1.5; }
@@ -280,7 +291,7 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    border: 1px dashed var(--copper);
+    border: 1px dashed var(--ink);
     border-radius: 6px;
     padding: 12px 14px;
     background: var(--panel);
@@ -300,7 +311,7 @@
     font-family: inherit;
     color: var(--text-main);
     background: var(--panel);
-    border: 1px solid var(--copper);
+    border: 1px solid var(--ink);
     border-radius: 6px;
     cursor: pointer;
     outline: none;
@@ -309,7 +320,8 @@
 
   .select-trigger:focus-visible,
   .select-trigger.open {
-    border-color: var(--copper);
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
   }
 
   .select-trigger .placeholder {
@@ -385,8 +397,8 @@
 
   .dropzone input[type="file"]::file-selector-button {
     background: transparent;
-    color: var(--copper);
-    border: 1px solid var(--copper-dim);
+    color: var(--ink);
+    border: 1px solid var(--ink);
     border-radius: 4px;
     padding: 6px 10px;
     font-size: 14px;
@@ -440,7 +452,7 @@
   }
 
   .stars input:focus-visible + label {
-    outline: 2px solid var(--copper);
+    outline: 2px solid var(--ink);
     outline-offset: 2px;
     border-radius: 3px;
   }
