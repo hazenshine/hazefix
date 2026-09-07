@@ -145,20 +145,27 @@
     outline-offset: 2px;
   }
 
+  /* DİKKAT: bu kuralda bir ara İKİ border bildirimi kaldı — üstte
+     "2px solid var(--ink)", altta eskiden kalan "border: none". Sonra gelen
+     kazandığı için çerçeve hiç uygulanmıyordu ve düğme, zemini krem olduğunda
+     tamamen kayboluyordu (kullanıcı: "arkaplan rengiyle aynı, border yok").
+     Ölçüm de kaçırmıştı, çünkü border-COLOR bakılmıştı: renk, style "none"
+     olsa bile tanımlı kalıyor. Bir çerçeveyi doğrularken border-style'a da bak.
+     Dikey padding 12.5 -> 10.5: çerçeve 2px yer kapladığı için yükseklik
+     korunuyor. */
   .submit-btn {
     width: 100%;
     background: var(--panel);
     color: var(--ink);
     border: 2px solid var(--ink);
-    padding: 12.5px 20px;
+    border-radius: 6px;
+    padding: 10.5px 20px;
     font-size: 16px;
     font-weight: 700;
     letter-spacing: 0.01em;
     font-family: inherit;
-    border: none;
-    border-radius: 6px;
     cursor: pointer;
-    transition: background 0.15s, opacity 0.15s, transform 0.1s ease;
+    transition: background 0.15s, color 0.15s, opacity 0.15s, transform 0.1s ease;
   }
 
   .submit-btn:hover {
