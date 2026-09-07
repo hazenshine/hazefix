@@ -10,11 +10,20 @@
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<!-- Fredoka yalnızca başlıklarda ve yalnızca 500'de kullanılıyor, bold ağırlıkları
-     bilinçli olarak yüklenmiyor: karşı boşlukları 500 üstünde kapanıp metni
-     bloğa çeviriyordu. Arayüz metni Nunito Sans — o da yuvarlak, ama metin
-     boyutları için çizildiği için küçük puntoda açık kalıyor. -->
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<!-- Başlık fontu Baloo 2, 600'de. FREDOKA'DAN 2026-09-07'DE ÇIKILDI ve geri
+     dönülmemeli: Fredoka'nın içinde ğ Ğ ş Ş İ glifleri YOK (ölçüldü —
+     cmap taramasında bulunamadı, canvas'ta ğ ile g farklı genişlik veriyordu).
+     Tarayıcı o harfleri başka bir fonttan alıyordu, yani "Tuğra" yazarken
+     kalın yuvarlak gövdenin yanında ince serifli bir ğ çıkıyordu. Türkçe bir
+     sitede bu kabul edilemez ve fontun kendi eksiği olduğu için kodla
+     çözülemiyor.
+     Baloo 2 aynı yuvarlak/kalın dile sahip ve Türkçeyi tam destekliyor
+     (ğ/g, ş/s, İ/I genişlikleri birebir eşit — yani glifler gerçekten var).
+     Ağırlık 600 seçildi: Fredoka 500'ün optik kalınlığına en yakın olan o.
+     Bold ağırlıkları yine yüklenmiyor — gerekçe aynı, karşı boşluklar kapanıyor.
+     Arayüz metni Nunito Sans; o da yuvarlak ama metin boyutları için çizildiği
+     için küçük puntoda açık kalıyor, ve Türkçeyi tam destekliyor. -->
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
   /* TEK TEMA (2026-09-03 kullanıcı kararı). Site yalnızca bu bej açık temayı
      kullanıyor; koyu tema ve tema anahtarı kaldırıldı. İkinci tema tasarım
@@ -63,7 +72,7 @@
     --danger: #9c3628;
     --font-body: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
     --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-    --font-heading: "Fredoka", var(--font-body);
+    --font-heading: "Baloo 2", var(--font-body);
   }
 
   * { box-sizing: border-box; }
@@ -133,7 +142,7 @@
   header h1 {
     font-family: var(--font-heading);
     font-size: 26px;
-    font-weight: 500;
+    font-weight: 600;
     letter-spacing: -0.01em;
     margin: 0 0 32px;
   }
@@ -454,7 +463,7 @@
     animation: confirm-grow 220ms ease;
   }
 
-  .confirm h2 { font-family: var(--font-heading); font-weight: 500; margin: 10px 0 10px; font-size: 30px; }
+  .confirm h2 { font-family: var(--font-heading); font-weight: 600; margin: 10px 0 10px; font-size: 30px; }
   .confirm p { color: var(--text-muted); font-size: 19px; line-height: 1.6; margin: 0; }
 
   .modal-overlay {
