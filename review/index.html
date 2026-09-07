@@ -43,34 +43,19 @@
      boyuyor ve bej panelin içinde yabancı duruyorlar. */
   :root {
     color-scheme: light;
-    /* Zemin 2026-09-07'de #e6d3b3'ten #f1e8d7'ye AÇILDI (kullanıcı isteği:
-       "krem kalsın ama çok daha açık olsun"). Kremin renk açısı korundu
-       (hue 37.6°), yalnızca açıklık 80.2 -> 89.5 ve doygunluk %3 düştü.
-       Nötrler yine ORANLARINA göre türetildi, hex'leri taşınmadı:
-       --field-bg 1.09:1, --panel-border 1.34:1. Gerekçe CLAUDE.md §3'te.
-       Açılma bütün metin kontrastlarını YÜKSELTTİ (en düşük 4.78 -> 5.74),
-       yani erişilebilirlik tarafında bedeli yok.
+    /* Zemin 2026-09-07'de iki adımda AÇILDI: #e6d3b3 -> #f1e8d7 -> #f5eee3
+       (kullanıcı isteği: "krem kalsın ama çok daha açık olsun"). Kremin renk
+       açısı korundu (hue 37.6°), yalnızca açıklık ve bir miktar doygunluk
+       değişti. Açılma bütün metin kontrastlarını YÜKSELTTİ, yani
+       erişilebilirlik tarafında bedeli yok — ayrıntı CLAUDE.md §3'te.
        NOT: favicon hâlâ eski zemin tonunda (#E6D3B3) — logo geçici olduğu
        için bilerek dokunulmadı; kalıcı logo gelince ikisi eşitlenmeli. */
     --bg: #f5eee3;
     --panel: #f5eee3;
-    --panel-border: #e2ceac;
     --panel-edge: transparent;
     --panel-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-    --field-bg: #efe4d2;
     --text-main: #241d12;
     --text-muted: #4e4436;
-    /* KAHVERENGİ AİLESİ BU DOSYADA TAMAMEN ÖLÜ (2026-09-07). Sırayla laciverte
-       geçtiler: kutu çerçeveleri, "Dosya Seç", seçim listesi penceresi ve
-       vurgusu, uyarı penceresi ve "Tamam" butonu. Sayfada kahverengi kalmadı.
-       Token'lar yine de duruyor: bu blok onay paneliyle BAYT BAYT kopya ve
-       orada .tab / .rev kuralları hâlâ kullanıyor. Formda kullanmadan önce
-       "bu gerçekten kahverengi mi olmalı" diye sor. */
-    --copper: #824b22;
-    --copper-dim: #9e6d3d;
-    --copper-bright: #6b3c18;
-    --copper-wash: rgba(130, 75, 34, 0.14);
-    --on-copper: #f7efe2;
     /* Yıldızlar 2026-09-04'te ★ karakterinden kullanıcının verdiği iki SVG'ye geçti.
        Durumu RENK değil BİÇİM ayırıyor: boş yıldız içi boş (yalnızca kontur),
        dolu yıldız içi dolu — bu yüzden iki token da aynı değerde.
@@ -131,12 +116,10 @@
     color: var(--text-main);
   }
 
-  /* Panel ile zemin AYNI renk (--bg ve --panel ikisi de aynı token değerinde); paneli
-     ayıran tek şey gölge. Bu yüzden iki token var:
+  /* Panel ile zemin AYNI renk (--bg ve --panel ikisi de aynı token değerinde);
+     paneli ayıran tek şey gölge. Bu yüzden iki token var:
        --panel-edge   panelin kenar çizgisi, şu an transparent — görünür bir
                       çerçeve "aynı renkten yükselen katman" hissini bozar.
-                      Alan ve modal kenarlıkları --panel-border'da kaldı,
-                      onlar çizgisiz kalmamalı; ikisi karıştırılmasın.
        --panel-shadow gölgenin tamamı, renk değil komple box-shadow değeri.
 
      GÖLGE HER YANA EŞİT OLMALI: kaydırma sıfır (0 0), yayılım dar, renk tek
@@ -271,8 +254,8 @@
      (kullanıcı isteği) — böylece başlık, gönder butonu ve bütün çerçeveler tek
      renkte buluşuyor. Ölçüldü: #1c304e çerçeve, #f5eee3 zeminde 11.52:1
      (arayüz bileşeni eşiği 3). Sayfada kahverengi çerçeve KALMADI.
-     --field-bg artık YALNIZCA onay panelindeki .rev yorum kartlarında
-     kullanılıyor; token bloğu iki dosyada kopya olduğu için burada da duruyor. */
+     --field-bg token'ı 2026-09-08'de tamamen kaldırıldı: kutular, dosya alanı
+     ve panelin yorum kartları hep --panel'e geçince kullanan kalmadı. */
   input[type="text"], textarea {
     width: 100%;
     padding: 11.25px 13px;
@@ -418,11 +401,11 @@
           koyulukta, yani vurgu okunmuyordu. Ders: vurgu rengini seçerken
           zeminle kontrastı değil, DEĞİŞTİRDİĞİ renkten farkını da ölç.
      --danger hem yeterince farklı hem de sayfada zaten kullanılan bir ton.
-     Ölçüldü: hover zemininde (--panel + --copper-wash ≈ #d8c09f) 4.02:1.
-     WCAG AA metin eşiği 4.5 — bunun ALTINDA, bilerek kabul edildi (kullanıcı
-     kararı, renk uyumu tercih edildi). Yükseltmek gerekirse iki yol var:
-     --copper-wash'ı hafifletmek ya da tonu bir tık koyulaştırmak; ikisi de
-     rozetle birebir aynılığı bozar. */
+     Ölçüldü: hover zemininde (--panel + --ink-wash = #d7d3ce) 2.60:1. WCAG AA
+     metin eşiği 4.5 — bunun ALTINDA, bilerek kabul edildi (kullanıcı kararı,
+     yıldızlarla aynı renk olması tercih edildi). Karşılığında vurgu belirgin:
+     normal satırdan farkı 4.31:1. Yükseltmenin tek yolu tonu koyulaştırmak,
+     o da yıldızlarla birebir aynılığı bozar. */
   .select-options li:hover,
   .select-options li.active {
     background: var(--ink-wash);
@@ -546,10 +529,10 @@
      :focus-visible bilinçli — fareyle tıklamada TETİKLENMEZ, yalnızca klavye
      ile gezinirken çıkar. Yani hem şikâyet çözülüyor hem klavye erişilebilirliği
      korunuyor. Kutulardaki halkayla aynı dil (2px, 2px offset). */
-  .tab:focus-visible,
-  .act-btn:focus-visible,
+  /* Form sayfasında yalnızca .submit-btn ve .modal-ok-btn var; .tab / .act-btn
+     / .link-btn panele ait, buraya kopyalanmadı. */
   .submit-btn:focus-visible,
-  .link-btn:focus-visible {
+  .modal-ok-btn:focus-visible {
     outline: 2px solid var(--ink);
     outline-offset: 2px;
   }
@@ -1148,9 +1131,20 @@
   // innerHTML kullanılıyor ama içeri giren metnin tamamı BİZİM yazdığımız
   // sabit cümle; ziyaretçiden gelen hiçbir şey buraya konmuyor (sayı hariç,
   // o da length'ten geliyor). Yoruma ait serbest metni buraya basma.
+  // Pencere açılırken odak MUTLAKA içeri taşınmalı.
+  //
+  // Aksi halde odak, pencereyi açan "Yorumu Gönder" düğmesinde kalıyor: düğme
+  // arkada basılı/seçili görünüyor (kullanıcı şikâyeti 2026-09-08) ve klavyeyle
+  // gezinen biri, üstte bir pencere varken arka plandaki formda dolaşıyor.
+  // Kapanınca odak düğmeye geri veriliyor — yoksa <body>'ye düşer ve klavye
+  // kullanıcısı sayfada yerini kaybeder.
+  let modaliAcan = null;
+
   function showModal(html) {
+    modaliAcan = document.activeElement;
     modalMsg.innerHTML = html;
     validationModal.classList.add("open");
+    modalOkBtn.focus();
   }
 
   function showValidationModal(missing) {
@@ -1161,6 +1155,10 @@
 
   function hideValidationModal() {
     validationModal.classList.remove("open");
+    // Odağı pencereyi açan öğeye geri ver; o gitmişse forma düşme, hiçbir şey
+    // yapma (odak <body>'de kalır, en azından sayfa dışına kaçmaz).
+    if (modaliAcan && document.contains(modaliAcan)) modaliAcan.focus();
+    modaliAcan = null;
   }
 
   modalOkBtn.addEventListener("click", hideValidationModal);
