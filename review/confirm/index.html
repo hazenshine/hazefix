@@ -360,12 +360,14 @@
     color: var(--bg);
     border: 2px solid var(--ink);
     border-radius: 6px;
-    padding: 10px 22px;
+    /* Çerçeve 2px olduğu için dikey padding 10'dan 8'e indi — buton eski
+       yüksekliğinde kalsın diye. Üç düğme de (dolu/ghost) aynı kutuda. */
+    padding: 8px 22px;
     font-size: 15px;
     font-weight: 700;
     font-family: inherit;
     cursor: pointer;
-    transition: background 0.15s, opacity 0.15s, transform 0.1s ease;
+    transition: background 0.15s, color 0.15s, opacity 0.15s, transform 0.1s ease;
   }
 
   .act-btn:hover {
@@ -377,6 +379,11 @@
 
   /* Onayı geri alma yıkıcı değil ama olumlu da değil: dolu bakır düğme
      "yapılacak asıl iş" hissi verir, bu yüzden ikincil (çerçeveli) duruyor. */
+  /* İKİNCİL düğme: Arşivle, Story görseli, Kılavuzu gizle/göster, Kapat,
+     Onayı geri al, Arşivden çıkar. Hepsi aynı görünümde — önceden "light"
+     diye üçüncü bir varyant vardı ve hover'ı hâlâ kahverengiydi; üç farklı
+     buton görünümü yan yana dağınık duruyordu (kullanıcı: "düzgün değil").
+     Artık yalnızca iki hal var: dolu (birincil) ve çerçeveli (ikincil). */
   .act-btn.ghost {
     background: var(--panel);
     color: var(--ink);
@@ -388,12 +395,6 @@
   /* Arşivle: Onayla'nın açık renklisi (kullanıcı isteği). Aynı bakır ailesinden
      ama dolgusu yıkanmış — yan yana dururken hangisinin asıl eylem olduğu
      belli olsun, ikisi de eşit ağırlıkta görünmesin. */
-  .act-btn.light {
-    background: var(--ink-wash);
-    color: var(--ink);
-  }
-
-  .act-btn.light:hover { background: rgba(130, 75, 34, 0.22); }
 
   .row-status { font-size: 14px; color: var(--text-muted); }
   .row-status.error { color: var(--danger); }
@@ -472,16 +473,19 @@
     position: absolute;
     left: 0;
     right: 0;
+    /* Şeritler 2026-09-07'de --danger kırmızısından laciverte çevrildi
+       (kullanıcı: "sitenin tonuna uygun değil"). Uyarı işlevini renk değil
+       DESEN taşıyor — çapraz tarama zaten "burası kapanıyor" diyor. */
     background: repeating-linear-gradient(
       -45deg,
-      rgba(156, 54, 40, 0.28) 0 6px,
-      rgba(156, 54, 40, 0.10) 6px 12px
+      rgba(28, 48, 78, 0.26) 0 6px,
+      rgba(28, 48, 78, 0.09) 6px 12px
     );
     pointer-events: none;
   }
 
-  .story-dead.top { top: 0; border-bottom: 2px dashed var(--danger); }
-  .story-dead.bottom { bottom: 0; border-top: 2px dashed var(--danger); }
+  .story-dead.top { top: 0; border-bottom: 2px dashed var(--ink); }
+  .story-dead.bottom { bottom: 0; border-top: 2px dashed var(--ink); }
   .story-frame.clean .story-dead { display: none; }
 
   .story-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
@@ -569,7 +573,7 @@
 
     <div class="story-actions">
       <a class="act-btn" id="storyDownload" download>PNG indir</a>
-      <button type="button" class="act-btn light" id="storyToggleGuides">Kılavuzu gizle</button>
+      <button type="button" class="act-btn ghost" id="storyToggleGuides">Kılavuzu gizle</button>
       <button type="button" class="act-btn ghost" id="storyClose">Kapat</button>
     </div>
 
@@ -862,7 +866,7 @@
           row["Onay"]
             ? { text: "Onayı geri al", cls: "act-btn ghost", busy: "Geri alınıyor…", patch: { "Onay": false } }
             : { text: "Onayla", cls: "act-btn", busy: "Onaylanıyor…", patch: { "Onay": true } },
-          { text: "Arşivle", cls: "act-btn light", busy: "Arşivleniyor…", patch: { "Arşiv": true, "Onay": false } },
+          { text: "Arşivle", cls: "act-btn ghost", busy: "Arşivleniyor…", patch: { "Arşiv": true, "Onay": false } },
         ];
 
     const btnEls = buttons.map((spec) => {
@@ -881,7 +885,7 @@
     if (row["Onay"] && !row["Arşiv"]) {
       const storyBtn = document.createElement("button");
       storyBtn.type = "button";
-      storyBtn.className = "act-btn light";
+      storyBtn.className = "act-btn ghost";
       storyBtn.textContent = "Story görseli";
       storyBtn.addEventListener("click", () => storyAc(row, storyBtn));
       actions.appendChild(storyBtn);
