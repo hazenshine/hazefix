@@ -22,23 +22,28 @@
 <meta name="robots" content="noindex">
 
 <style>
-  :root { color-scheme: light dark; }
+  /* Renkler /review/ ile aynı tek bej temadan geliyor: zemin --bg (#e6d3b3),
+     metin --text-main (#241d12), bağlantı --copper (#824b22). Ölçüldü:
+     bağlantı zemin üzerinde 4.81:1, yani WCAG AA (4.5) geçiyor.
+     Form paleti değişirse buradaki üç sabit de elle güncellenmeli — bu sayfa
+     ortak bir CSS dosyası kullanmıyor (anasayfa yazılınca zaten değişecek).
+
+     color-scheme: light (light dark DEĞİL) — site tek temalı; ikisi birden
+     bırakılırsa işletim sistemi koyu temadayken kaydırma çubuğu gibi native
+     kontroller koyu boyanıp bej zeminde yabancı duruyor. */
+  :root { color-scheme: light; }
   body {
     margin: 0;
     min-height: 100vh;
     display: grid;
     place-items: center;
-    background: #141311;
-    color: #f2ede6;
+    background: #e6d3b3;
+    color: #241d12;
     font: 400 15px/1.6 "Nunito Sans", system-ui, -apple-system, sans-serif;
     text-align: center;
     padding: 24px;
   }
-  a { color: #d08b5a; }
-  @media (prefers-color-scheme: light) {
-    body { background: #eaeeeb; color: #23211d; }
-    a { color: #a85f2e; }
-  }
+  a { color: #824b22; }
 </style>
 </head>
 <body>
