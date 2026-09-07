@@ -69,16 +69,6 @@
     --overlay: rgba(45, 33, 18, 0.45);
     --glow: rgba(130, 75, 34, 0.06);
     --signal: #206541;
-    /* Logonun lacivert mürekkep rengi. Seçim listesinde üstüne gelinen/klavyeyle
-       gezinilen satırın yazı rengi (2026-09-07, kullanıcı isteği — orası
-       --signal yeşiliydi ve siteye yabancı duruyordu).
-       --signal'i DEĞİŞTİRME, o hâlâ başarı mesajının (.status.ok) rengi ve
-       yeşil kalması gerekiyor; ikisi ayrı sorular.
-       Yıldızların --star-filled/--star-empty'si de aynı hex ama bilerek ayrı
-       duruyor: ileride yıldızlar ayrışmak isterse yer hazır olsun.
-       Ölçüldü: hover zemininde (--panel + --copper-wash ≈ #d8c09f) 7.56:1,
-       WCAG AAA (7) geçiyor. */
-    --ink: #1c304e;
     --danger: #9c3628;
     --font-body: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
     --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
@@ -351,10 +341,23 @@
     color: var(--text-main);
   }
 
+  /* Vurgulanan satırın yazısı "(gerekli)" rozetiyle AYNI renk (--danger),
+     kullanıcı isteği 2026-09-07. İki tur sürdü:
+       1. Başlangıçta --signal yeşiliydi — siteye yabancı duruyordu.
+       2. Sonra logonun laciverti (#1c304e) denendi: kullanıcı "hiç görünmüyor"
+          dedi ve haklıydı — normal satır rengi #241d12 ile neredeyse aynı
+          koyulukta, yani vurgu okunmuyordu. Ders: vurgu rengini seçerken
+          zeminle kontrastı değil, DEĞİŞTİRDİĞİ renkten farkını da ölç.
+     --danger hem yeterince farklı hem de sayfada zaten kullanılan bir ton.
+     Ölçüldü: hover zemininde (--panel + --copper-wash ≈ #d8c09f) 4.02:1.
+     WCAG AA metin eşiği 4.5 — bunun ALTINDA, bilerek kabul edildi (kullanıcı
+     kararı, renk uyumu tercih edildi). Yükseltmek gerekirse iki yol var:
+     --copper-wash'ı hafifletmek ya da tonu bir tık koyulaştırmak; ikisi de
+     rozetle birebir aynılığı bozar. */
   .select-options li:hover,
   .select-options li.active {
     background: var(--copper-wash);
-    color: var(--ink);
+    color: var(--danger);
   }
 
   .dropzone input[type="file"] {
