@@ -738,6 +738,19 @@
     });
   }
 
+  // Story görselindeki tarih. Panelin `tarihYaz`ından AYRI, çünkü orada saat
+  // de yazıyor; story'de kullanıcı isteğiyle yalnızca gün + ay adı + yıl var
+  // ("7 Eylül 2026"). Boş/bozuk tarihte boş dönüyor — o durumda story tarihsiz
+  // çiziliyor, düğme kırılmıyor.
+  function storyTarih(iso) {
+    if (!iso) return "";
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    return d.toLocaleDateString("tr-TR", {
+      day: "numeric", month: "long", year: "numeric",
+    });
+  }
+
   function starsFor(value) {
     const wrap = document.createElement("span");
     wrap.className = "rstars";
@@ -1139,12 +1152,29 @@
   async function storyCiz(row) {
     // Ölçüm fonta bağlı: yazı tipleri inmeden measureText yanlış değer verir
     // ve metin ya taşar ya da gereksiz küçülür. Bu yüzden önce yükleniyorlar.
+    //
+    // İKİNCİ PARAMETRE ŞART, kaldırma: Google Fonts Türkçeye özgü ğ Ğ ş Ş İ
+    // harflerini AYRI bir dosyada sunuyor ("latin-ext" alt kümesi, @font-face
+    // içinde unicode-range ile) ve o dosya ancak o harfler istendiğinde iniyor.
+    // document.fonts.load()'a metin verilmezse tarayıcı varsayılan "BESbswy"
+    // ile deniyor — hepsi ASCII, yani latin-ext hiç istenmiyor.
+    //
+    // Sonucu 2026-09-07'de ölçüldü: fonts.check("500 46px Fredoka", "Şule")
+    // false dönüyordu ve canvas o harfleri yedek fonta düşürüyordu — "Görkem
+    // Şule" tek satırda iki ayrı yazı tipiyle çıkıyordu (kullanıcı şikâyeti:
+    // "türkçe karakter kullanıldığında font bozuluyor").
+    //
+    // Nunito o gün tesadüfen sağlamdı: panelin KENDİ arayüzünde Türkçe metin
+    // var ve tarayıcı sayfayı boyarken latin-ext'i zaten indirmiş oluyordu.
+    // Yani buradaki garanti değil, tesadüftü — arayüz metinleri değişse
+    // sessizce geri gelirdi. İkisi de artık açıkça isteniyor.
     if (document.fonts) {
+      const TR_ORNEK = "ĞŞİIÇÖÜğşıiçöü";
       await Promise.all([
-        document.fonts.load("500 92px Fredoka"),
-        document.fonts.load("400 60px 'Nunito Sans'"),
-        document.fonts.load("600 30px 'Nunito Sans'"),
-        document.fonts.load("700 26px 'Nunito Sans'"),
+        document.fonts.load("500 92px Fredoka", TR_ORNEK),
+        document.fonts.load("400 60px 'Nunito Sans'", TR_ORNEK),
+        document.fonts.load("600 30px 'Nunito Sans'", TR_ORNEK),
+        document.fonts.load("700 26px 'Nunito Sans'", TR_ORNEK),
       ]).catch(() => {});
       await document.fonts.ready;
     }
@@ -1197,6 +1227,10 @@
     const kritYildiz = 46;
     const kritSatirH = 58;
     const kritAra = 16;
+    const yildizAra = 8;
+    // Tarih ikincil bilgi: kriter etiketlerinden (38) belirgin şekilde küçük,
+    // yoksa son puan satırında etiketle eşit ağırlıkta iki metin olur.
+    const tarihBoyu = 30;
 
     ctx.textBaseline = "top";
 
@@ -1516,7 +1550,6 @@
       ctx.fillText(label, icX, y + (kritSatirH - kritBoyu) / 2 - 2);
 
       const puan = Number(row[column]) || 0;
-      const yildizAra = 8;
       let sx = yildizBasi;
       for (let i = 1; i <= 5; i++) {
         yildizCiz(ctx, sx, y + (kritSatirH - kritYildiz) / 2, kritYildiz, i <= puan, renk.yildiz, yollar);
@@ -1524,6 +1557,30 @@
       }
       y += kritSatirH + kritAra;
     });
+
+    // Yorumun tarihi kartın sağ ALT köşesinde, son puan satırının hizasında
+    // (kullanıcı isteği, 2026-09-07). Kendi satırını açmıyor: yıldızların
+    // sağında zaten geniş bir boşluk var, oraya oturunca kartın yüksekliği
+    // değişmiyor ve alt kenarla arasına fazladan boşluk girmiyor.
+    //
+    // Genişlik sabit değil ÖLÇÜLÜYOR: "1 Mayıs 2026" ile "27 Aralık 2026"
+    // arasında belirgin fark var ve uzun olanı yıldızların üstüne binebilir.
+    // Sığmazsa punto düşüyor — isim/hizmet satırlarındaki `sigdir` mantığının
+    // aynısı.
+    const tarihMetni = storyTarih(row["Yorum Tarihi"]);
+    if (tarihMetni) {
+      const sonSatirUst = y - kritSatirH - kritAra;
+      const yildizSonu = yildizBasi + 5 * kritYildiz + 4 * yildizAra;
+      const tarihSig = sigdir(ctx, tarihMetni, icX + icG - yildizSonu - 24,
+        (p) => `400 ${p}px "Nunito Sans", sans-serif`, tarihBoyu, 22);
+      ctx.font = `400 ${tarihSig.punto}px "Nunito Sans", sans-serif`;
+      ctx.fillStyle = renk.muted;
+      // Sağa yaslama measureText ile; ctx.textAlign'a dokunulmuyor, çünkü
+      // bu fonksiyondaki bütün çizimler "left" varsayıyor.
+      const tarihG = ctx.measureText(tarihSig.metin).width;
+      ctx.fillText(tarihSig.metin, icX + icG - tarihG,
+        sonSatirUst + (kritSatirH - tarihSig.punto) / 2 - 2);
+    }
 
     return { canvas: cv, kisaltildi };
   }
