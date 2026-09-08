@@ -103,6 +103,22 @@
 
   * { box-sizing: border-box; }
 
+  /* Yalnızca ekran okuyucuya görünen metin. Görsel olarak yok ama
+     erişilebilirlik ağacında var — `display: none` ya da `visibility: hidden`
+     kullanılamaz, ikisi de düğümü ağaçtan komple çıkarır. */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
   body {
     margin: 0;
     min-height: 100vh;
@@ -375,6 +391,20 @@
     transform: scale(0.96);
     transform-origin: top center;
     pointer-events: none;
+    /* VISIBILITY ŞART, opacity TEK BAŞINA YETMİYOR. Saydamlık bir öğeyi
+       erişilebilirlik ağacından ÇIKARMAZ: kapalı listenin beş seçeneği ekran
+       okuyucuya okunuyordu (2026-09-08'de ölçüldü — kapalı listede
+       visibility "visible" dönüyordu). Görsel olarak da fark yok, çünkü
+       gecikme animasyonun süresi kadar: açılırken anında görünür oluyor,
+       kapanırken 150ms sonra gizleniyor, yani solma animasyonu bozulmuyor. */
+    /* GİZLEME CSS'TE DEĞİL, JS'TE: kapalı liste `inert` + `aria-hidden`
+       işaretleniyor (bkz. createSelect > open/close).
+       Önce `visibility` geçişiyle denendi ve BIRAKILDI: geçiş, sekme arka
+       plandayken hiç ilerlemiyor (2026-09-08'de ölçüldü — sekme öne
+       alınmadan liste kapandıktan sonra bile "visible" kalıyordu). Ekran
+       okuyucudan gizleme, çalışması animasyona bağlı olamayacak kadar
+       kritik; `inert` anında ve kesin.
+       Buradaki opacity/transform yalnızca görsel solma. */
     transition: opacity 150ms ease, transform 150ms ease;
   }
 
@@ -383,6 +413,11 @@
     transform: scale(1);
     pointer-events: auto;
   }
+
+  /* `inert` desteklemeyen eski tarayıcılarda liste yine de tıklanamaz olsun.
+     Modern tarayıcılarda inert zaten hem odağı hem erişilebilirlik ağacını
+     kapatıyor. */
+  .select-options[inert] { pointer-events: none; }
 
   .select-options li {
     padding: 9px 10px;
@@ -434,28 +469,40 @@
     gap: 4px;
   }
 
-  .stars input { position: absolute; opacity: 0; pointer-events: none; }
-
-  /* Yıldız artık metin değil maske: kutu boyutu width/height ile veriliyor,
-     rengi background-color taşıyor, biçimi mask-image. Boyut büyütülecekse
-     tek yer burası — 30px'in içinde çizim ~24px yer kaplıyor (SVG'nin kendi
-     kenar boşluğu var). Etiketlerin içi BOŞ olmalı; ★ karakteri geri konursa
-     maskenin altında ikinci bir yıldız gibi görünür. */
-  .stars label {
+  /* YILDIZIN KENDİSİ ARTIK RADYO DÜĞMESİ. Eskiden radyo `position: absolute`
+     ile ekrandan kaçırılıyor, görünen yıldızı ayrı bir <label> çiziyordu.
+     O düzen ekran okuyucuda ÇÖKÜYORDU ve 2026-09-08'de ölçülerek bulundu:
+     beş radyonun beşi de aynı noktada (x=170, 13x13) üst üste yığılıyordu,
+     görünen yıldızlar ise x=20/54/88/122/156'daydı. Yani parmakla ya da
+     VoiceOver'ın dokunarak keşfiyle 1–4. yıldıza dokunan kişi altında hiçbir
+     kontrol bulamıyor, yalnızca boş bir <label>'a değiyordu — "alanın ne için
+     olduğunu söylemiyor" şikâyetinin birebir sebebi buydu. Ayrıca gerçek
+     dokunma hedefi 13x13'tü, WCAG 2.2'nin 24x24 eşiğinin altında.
+     Şimdi kontrol ile görüntü aynı kutu: dokunma hedefi 30x30 ve tam yıldızın
+     üstünde. `appearance: none` şart — yoksa tarayıcının kendi yuvarlağı
+     maskenin altında kalır.
+     ETİKET YOK: adı `aria-label` veriyor, fare ipucunu `title`.
+     Boyut büyütülecekse tek yer burası; 30px'in içinde çizim ~24px yer
+     kaplıyor (SVG'nin kendi kenar boşluğu var). */
+  .stars input {
+    appearance: none;
+    -webkit-appearance: none;
     display: inline-block;
     width: 30px;
     height: 30px;
+    margin: 0;
+    padding: 0;
+    border: none;
     background-color: var(--star-empty);
     -webkit-mask: var(--star-outline) center / contain no-repeat;
     mask: var(--star-outline) center / contain no-repeat;
     cursor: pointer;
-    margin: 0;
     user-select: none;
     -webkit-user-select: none;
     transition: background-color 0.12s, transform 0.1s ease;
   }
 
-  .stars label:active {
+  .stars input:active {
     transform: scale(0.8);
   }
 
@@ -463,16 +510,20 @@
      için burayı değil token'ı düzenle.
      Burada RENGİN yanında BİÇİM de değişiyor: içi boş yıldız içi doluya dönüyor.
      Yalnızca mask-image yazılı, maskenin konum/boyut/tekrar ayarları yukarıdaki
-     kısayoldan miras kalıyor — oraya dokunulursa burası da bozulur. */
-  .stars input:checked ~ label,
-  .stars label:hover,
-  .stars label:hover ~ label {
+     kısayoldan miras kalıyor — oraya dokunulursa burası da bozulur.
+     DOM sırası ters (5,4,3,2,1) + row-reverse: bir yıldızın DOM'da SONRA gelen
+     kardeşleri ekranda onun SOLUNDA duruyor, yani "seçilenin altındakiler de
+     dolsun" kuralı `~` ile kendiliğinden çıkıyor. */
+  .stars input:checked,
+  .stars input:checked ~ input,
+  .stars input:hover,
+  .stars input:hover ~ input {
     background-color: var(--star-filled);
     -webkit-mask-image: var(--star-solid);
     mask-image: var(--star-solid);
   }
 
-  .stars input:focus-visible + label {
+  .stars input:focus-visible {
     outline: 2px solid var(--ink);
     outline-offset: 2px;
     border-radius: 3px;
@@ -495,7 +546,16 @@
   .submit-btn {
     display: block;
     width: fit-content;
-    min-width: 280px;
+    /* min() ŞART, düz `min-width: 280px` DEĞİL. CSS'te min-width her zaman
+       max-width'i yener, yani yanındaki `max-width: 100%` dar ekranda hiç
+       devreye girmiyordu: 320px'lik bir ekranda düğme 280px kalıp panelden
+       taşıyor ve SAYFAYA YATAY KAYDIRMA ÇUBUĞU ekliyordu (2026-09-08'de
+       ölçüldü: sayfa 337px, ekran 320px). Yatay kaydırma WCAG 1.4.10'un
+       doğrudan ihlali — ekranı büyüterek okuyan biri her satırda sağa sola
+       kaydırmak zorunda kalıyor.
+       min() ile yer varken ölçülen 280px aynen korunuyor, yer yokken düğme
+       kabına sığıyor. */
+    min-width: min(280px, 100%);
     max-width: 100%;
     margin-left: auto;
     background: var(--ink);
@@ -584,6 +644,11 @@
     z-index: 1000;
     opacity: 0;
     pointer-events: none;
+    /* Seçim listesindeki ile aynı gerekçe: saydamlık ekran okuyucudan
+       gizlemiyor. Kapalı uyarı penceresinin metni ("İsim, Verilen Hizmet …
+       alanlarını doldurunuz.") sayfada gezinen kişiye okunuyordu. */
+    /* Gizleme JS'te, `inert` + `aria-hidden` ile — gerekçe .select-options
+       kuralındaki notta. Buradaki geçiş yalnızca görsel solma. */
     transition: opacity 160ms ease;
   }
 
@@ -638,6 +703,134 @@
     color: var(--ink);
   }
   .modal-ok-btn:active { transform: scale(0.96); }
+
+  /* Doğrulamada eksik bulunan alan. Renk TEK BAŞINA taşıyıcı değil: ekran
+     okuyucuya aria-invalid söylüyor, gözle görene de kalınlaşan çerçeve —
+     yani rengi ayırt edemeyen biri de farkı görüyor (WCAG 1.4.1). */
+  input[type="text"][aria-invalid="true"],
+  textarea[aria-invalid="true"],
+  .select-trigger[aria-invalid="true"] {
+    border-width: 2px;
+    border-color: var(--danger);
+  }
+
+  /* Yıldız grubunda çerçeve yok, o yüzden işaret dıştan veriliyor: kutuyu
+     büyütmeyen bir halka (outline layout'u etkilemiyor, yıldızlar yerinden
+     oynamıyor). */
+  .stars[aria-invalid="true"] {
+    outline: 2px solid var(--danger);
+    outline-offset: 4px;
+    border-radius: 4px;
+  }
+
+  /* ---------------------------------------------------------------
+     YÜKSEK KONTRAST (Windows Yüksek Kontrast / forced-colors)
+     ---------------------------------------------------------------
+     Bu modda tarayıcı yazarın renklerini ATIYOR ve kullanıcının sistem
+     paletini basıyor. Üç şey bu yüzden bozuluyordu (2026-09-08, görme
+     engelli bir kullanıcıyla yapılan testte bulundu):
+
+     1. YILDIZLAR GÖRÜNMÜYORDU. Yıldız bir maske ve rengini background-color
+        taşıyor; forced-colors bütün background-color'ları Canvas'a (sayfa
+        zeminine) zorluyor, yani yıldız zeminle aynı renge düşüp kayboluyordu.
+        Çözüm `forced-color-adjust: none` + SİSTEM RENGİ: böylece renk
+        yazardan geliyor ama yine de kullanıcının seçtiği temaya ait
+        (CanvasText/Highlight), sabit bir hex değil.
+
+     2. HER KUTUDA KALICI BİR HALKA VARDI. Kutuların odak halkası normalde
+        "hep var ama şeffaf" (animate edilebilsin diye, bkz. yukarıdaki not).
+        forced-colors ŞEFFAF ÇERÇEVELERİ DE sistem rengine çeviriyor — bilinen
+        bir davranış, hatta HCM'de görünür kenarlık elde etmek için kasten
+        kullanılan bir teknik. Sonuç: odakta olmayan her kutu odaktaymış gibi
+        duruyordu. Burada halka kapatılıp yalnızca gerçek odakta veriliyor.
+
+     3. HOVER/SEÇİM GERİ BİLDİRİMİ YOKTU. Dolu düğme ile boş düğme aynı
+        ButtonFace'e düşüyor, yani imleç üstüne gelince hiçbir şey değişmiyordu.
+        Highlight/HighlightText ile geri getirildi.
+
+     Sistem renkleri elle seçilmiş hex'lerin yerine kullanılıyor; kullanıcı
+     hangi yüksek kontrast temasını seçerse seçsin uyumlu kalıyor. */
+  @media (forced-colors: active) {
+    /* 2 numaralı sorun: şeffaf halka kalıcı görünür hale geliyordu. */
+    input[type="text"],
+    textarea,
+    .select-trigger,
+    .submit-btn,
+    .modal-ok-btn {
+      outline-style: none;
+    }
+
+    input[type="text"]:focus,
+    textarea:focus,
+    .select-trigger:focus-visible,
+    .select-trigger.open,
+    .submit-btn:focus-visible,
+    .modal-ok-btn:focus-visible,
+    .stars input:focus-visible {
+      outline: 3px solid Highlight;
+      outline-offset: 2px;
+    }
+
+    /* 1 numaralı sorun: yıldızlar zemine karışıyordu. Boş/dolu ayrımını
+       BİÇİM taşımaya devam ediyor (kontur / içi dolu), renk yalnızca
+       destekliyor. */
+    .stars input {
+      forced-color-adjust: none;
+      background-color: CanvasText;
+    }
+
+    .stars input:checked,
+    .stars input:checked ~ input,
+    .stars input:hover,
+    .stars input:hover ~ input {
+      background-color: Highlight;
+    }
+
+    /* 3 numaralı sorun: imleç geri bildirimi. */
+    .submit-btn:hover,
+    .modal-ok-btn:hover,
+    .select-options li:hover,
+    .select-options li.active {
+      forced-color-adjust: none;
+      background: Highlight;
+      color: HighlightText;
+      border-color: Highlight;
+    }
+
+    /* Uyarı penceresi zeminden ayrılsın: bulanıklık HCM'de çalışmıyor. */
+    .modal-box { border: 2px solid CanvasText; }
+
+    /* Eksik alan göstergesi: HCM'de --danger kırmızısı da eziliyor, o yüzden
+       renk yerine BİÇİM konuşuyor. */
+    input[type="text"][aria-invalid="true"],
+    textarea[aria-invalid="true"],
+    .select-trigger[aria-invalid="true"] {
+      border-style: dashed;
+      border-width: 3px;
+    }
+  }
+
+  /* ---------------------------------------------------------------
+     HAREKET AZALTMA (prefers-reduced-motion)
+     ---------------------------------------------------------------
+     İşletim sisteminde "hareketi azalt" açık olan kişilerde animasyonlar
+     baş dönmesi ve mide bulantısı yapabiliyor (WCAG 2.3.3). Hareket
+     tamamen kaldırılmıyor, süresi sıfıra iniyor: durumlar yine değişiyor,
+     sadece geçiş anı yok.
+     `visibility` GECİKMELERİ BOZULMASIN diye ayrıca sıfırlanıyor — kapalı
+     pencerelerin ekran okuyucudan gizlenmesi o gecikmeye bağlı, süre
+     sıfırlanınca gecikmenin de sıfırlanması gerekiyor. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      transition-delay: 0s !important;
+      scroll-behavior: auto !important;
+    }
+  }
 </style>
 
 </head>
@@ -652,9 +845,18 @@
   </header>
 
   <form id="reviewForm" novalidate autocomplete="off">
+    <!-- (gerekli) rozetleri EKRAN OKUYUCUDAN GİZLİ (aria-hidden). Sebep: aynı
+         bilgiyi `required` niteliği zaten söylüyor ve ekran okuyucu alanın
+         adını "İsim, gerekli, düzenleme alanı" diye okuyor. Rozet gizlenmezse
+         ad "İsim (gerekli)" oluyor ve "gerekli" iki kez duyuluyor. Rozet
+         gözle görene aynen duruyor; yalnızca sesli tekrar kalkıyor.
+         Eşik/uzunluk gibi rozetin taşıdığı EK bilgi ayrı bir açıklama
+         düğümüne taşındı (aşağıda aria-describedby ile). -->
     <div class="field">
-      <label for="firstName"><span class="field-name">İsim</span> <span class="req" id="nameReq">(gerekli)</span></label>
-      <input type="text" id="firstName" name="firstName" required maxlength="80" autocomplete="given-name">
+      <label for="firstName"><span class="field-name">İsim</span> <span class="req" id="nameReq" aria-hidden="true">(gerekli)</span></label>
+      <input type="text" id="firstName" name="firstName" required maxlength="80" autocomplete="given-name"
+             aria-describedby="nameHint">
+      <span class="sr-only" id="nameHint">En az 3 karakter.</span>
     </div>
 
     <div class="hp" aria-hidden="true">
@@ -662,35 +864,62 @@
       <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
     </div>
 
+    <!-- SEÇİM KUTUSU — ARIA 1.2 "yalnızca seçmeli combobox" kalıbı.
+         Değişenler ve sebepleri (2026-09-08):
+           role="combobox"      Eskiden düz bir <button>'du. aria-activedescendant
+                                yalnızca combobox/listbox gibi rollerde geçerli;
+                                düz düğmede ekran okuyucular onu YOK SAYIYORDU,
+                                yani klavyeyle ok tuşuna basan kişi hangi
+                                seçeneğin üzerinde olduğunu hiç duymuyordu.
+           aria-labelledby="…Label …Value"
+                                Eskiden yalnızca etiketi gösteriyordu, o yüzden
+                                ekran okuyucu SEÇİLEN DEĞERİ hiç söylemiyordu
+                                (axe: "label-content-name-mismatch" — görünen
+                                metin "Seçiniz", okunan ad "Verilen Hizmet").
+                                İkisi birlikte verilince ad "Verilen Hizmet,
+                                Nintendo Switch - Çipleme" oluyor.
+           aria-controls        Düğme ile listeyi bağlıyor.
+           listbox'a aria-labelledby
+                                Liste isimsizdi (axe: "aria-input-field-name").
+           aria-selected        Seçeneklerde hiç yoktu; listbox seçeneklerinde
+                                zorunlu, "seçili" durumu bununla duyuluyor.
+           ▾ oku aria-hidden    Ekran okuyucu "aşağı bakan küçük siyah üçgen"
+                                diye okuyordu; süs karakteri, bilgi taşımıyor. -->
     <div class="field">
-      <label id="serviceLabel"><span class="field-name">Verilen Hizmet</span> <span class="req" id="serviceReq">(gerekli)</span></label>
+      <label id="serviceLabel"><span class="field-name">Verilen Hizmet</span> <span class="req" id="serviceReq" aria-hidden="true">(gerekli)</span></label>
       <div class="select-wrap" id="serviceSelect">
-        <button type="button" class="select-trigger" id="serviceTrigger" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="serviceLabel">
+        <button type="button" class="select-trigger" id="serviceTrigger"
+                role="combobox" aria-haspopup="listbox" aria-expanded="false"
+                aria-controls="serviceOptions" aria-labelledby="serviceLabel serviceValue"
+                aria-required="true">
           <span id="serviceValue" class="placeholder">Seçiniz</span>
-          <span class="select-arrow">▾</span>
+          <span class="select-arrow" aria-hidden="true">▾</span>
         </button>
-        <ul class="select-options" id="serviceOptions" role="listbox">
-          <li role="option" id="service-opt-0" data-value="Nintendo Switch - Çipleme">Nintendo Switch - Çipleme</li>
-          <li role="option" id="service-opt-1" data-value="Nintendo Switch - Parça Değişimi">Nintendo Switch - Parça Değişimi</li>
-          <li role="option" id="service-opt-2" data-value="Nintendo Switch - Yazılım Desteği">Nintendo Switch - Yazılım Desteği</li>
-          <li role="option" id="service-opt-3" data-value="Nintendo Switch - Cihaz Satışı">Nintendo Switch - Cihaz Satışı</li>
-          <li role="option" id="service-opt-4" data-value="Diğer">Diğer</li>
+        <ul class="select-options" id="serviceOptions" role="listbox" aria-labelledby="serviceLabel">
+          <li role="option" aria-selected="false" id="service-opt-0" data-value="Nintendo Switch - Çipleme">Nintendo Switch - Çipleme</li>
+          <li role="option" aria-selected="false" id="service-opt-1" data-value="Nintendo Switch - Parça Değişimi">Nintendo Switch - Parça Değişimi</li>
+          <li role="option" aria-selected="false" id="service-opt-2" data-value="Nintendo Switch - Yazılım Desteği">Nintendo Switch - Yazılım Desteği</li>
+          <li role="option" aria-selected="false" id="service-opt-3" data-value="Nintendo Switch - Cihaz Satışı">Nintendo Switch - Cihaz Satışı</li>
+          <li role="option" aria-selected="false" id="service-opt-4" data-value="Diğer">Diğer</li>
         </ul>
       </div>
       <input type="hidden" id="serviceInput" name="service">
     </div>
 
     <div class="field field-hidden" id="deviceField">
-      <label id="deviceLabel"><span class="field-name">Cihaz Modeli</span> <span class="req" id="deviceReq">(gerekli)</span></label>
+      <label id="deviceLabel"><span class="field-name">Cihaz Modeli</span> <span class="req" id="deviceReq" aria-hidden="true">(gerekli)</span></label>
       <div class="select-wrap" id="deviceSelect">
-        <button type="button" class="select-trigger" id="deviceTrigger" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="deviceLabel">
+        <button type="button" class="select-trigger" id="deviceTrigger"
+                role="combobox" aria-haspopup="listbox" aria-expanded="false"
+                aria-controls="deviceOptions" aria-labelledby="deviceLabel deviceValue"
+                aria-required="true">
           <span id="deviceValue" class="placeholder">Seçiniz</span>
-          <span class="select-arrow">▾</span>
+          <span class="select-arrow" aria-hidden="true">▾</span>
         </button>
-        <ul class="select-options" id="deviceOptions" role="listbox">
-          <li role="option" id="device-opt-0" data-value="Switch v1/v2">Switch v1/v2</li>
-          <li role="option" id="device-opt-1" data-value="Switch Lite">Switch Lite</li>
-          <li role="option" id="device-opt-2" data-value="Switch OLED">Switch OLED</li>
+        <ul class="select-options" id="deviceOptions" role="listbox" aria-labelledby="deviceLabel">
+          <li role="option" aria-selected="false" id="device-opt-0" data-value="Switch v1/v2">Switch v1/v2</li>
+          <li role="option" aria-selected="false" id="device-opt-1" data-value="Switch Lite">Switch Lite</li>
+          <li role="option" aria-selected="false" id="device-opt-2" data-value="Switch OLED">Switch OLED</li>
         </ul>
       </div>
       <input type="hidden" id="deviceInput" name="deviceModel">
@@ -699,52 +928,75 @@
     <div class="field">
       <label for="imageUpload"><span class="field-name">Fotoğraf</span> <span class="opt">(opsiyonel)</span></label>
       <div class="dropzone">
-        <input type="file" id="imageUpload" name="image" accept="image/png,image/jpeg,image/gif,image/webp">
+        <input type="file" id="imageUpload" name="image" accept="image/png,image/jpeg,image/gif,image/webp"
+               aria-describedby="imageHelp">
       </div>
-      <p class="helper">JPG, PNG, GIF ya da WebP — 5 MB'a kadar dosya yüklemesi yapabilirsiniz.</p>
+      <p class="helper" id="imageHelp">JPG, PNG, GIF ya da WebP — 5 MB'a kadar dosya yüklemesi yapabilirsiniz.</p>
+    </div>
+
+    <!-- YILDIZLAR: görünen yıldızın KENDİSİ radyo düğmesi, ayrı bir <label>
+         yok. Eski düzende radyo ekran dışına atılıyor, yıldızı boş bir <label>
+         çiziyordu; ölçüldüğünde beş radyonun beşi de aynı 13x13'lük noktada
+         üst üste çıktı (CSS'teki nota bak). Ekran okuyucuyla ya da parmakla
+         yıldıza dokunan kişi kontrole hiç değmiyordu.
+         Grubun adı artık aria-labelledby ile ÜSTTEKİ ETİKETTEN geliyor:
+         böylece ekranda yazan "Hizmet Kalitesi" ile sesli okunan ad birebir
+         aynı. Önce ayrı bir aria-label ("Hizmet Kalitesi Puanı") yazılıydı,
+         yani görünen metinle okunan ad ayrışıyordu.
+         aria-required grupta duruyor: HTML'in `required`i tek tek radyolara
+         yazılıyor ama grubun tamamının zorunlu olduğunu ekran okuyucuya bu
+         söylüyor. -->
+    <div class="field rating">
+      <label id="sqLabel"><span class="field-name">Hizmet Kalitesi</span> <span class="req" id="serviceQualityReq" aria-hidden="true">(gerekli)</span></label>
+      <div class="stars" role="radiogroup" aria-labelledby="sqLabel" aria-required="true">
+        <input type="radio" id="sq-star5" name="ratingServiceQuality" value="5" required aria-label="5 yıldız — Mükemmel" title="Mükemmel">
+        <input type="radio" id="sq-star4" name="ratingServiceQuality" value="4" aria-label="4 yıldız — İyi" title="İyi">
+        <input type="radio" id="sq-star3" name="ratingServiceQuality" value="3" aria-label="3 yıldız — Orta" title="Orta">
+        <input type="radio" id="sq-star2" name="ratingServiceQuality" value="2" aria-label="2 yıldız — Kötü" title="Kötü">
+        <input type="radio" id="sq-star1" name="ratingServiceQuality" value="1" aria-label="1 yıldız — Berbat" title="Berbat">
+      </div>
     </div>
 
     <div class="field rating">
-      <label><span class="field-name">Hizmet Kalitesi</span> <span class="req" id="serviceQualityReq">(gerekli)</span></label>
-      <div class="stars" role="radiogroup" aria-label="Hizmet Kalitesi Puanı">
-        <input type="radio" id="sq-star5" name="ratingServiceQuality" value="5" required aria-label="5 yıldız — Mükemmel"><label for="sq-star5" title="Mükemmel"></label>
-        <input type="radio" id="sq-star4" name="ratingServiceQuality" value="4" aria-label="4 yıldız — İyi"><label for="sq-star4" title="İyi"></label>
-        <input type="radio" id="sq-star3" name="ratingServiceQuality" value="3" aria-label="3 yıldız — Orta"><label for="sq-star3" title="Orta"></label>
-        <input type="radio" id="sq-star2" name="ratingServiceQuality" value="2" aria-label="2 yıldız — Kötü"><label for="sq-star2" title="Kötü"></label>
-        <input type="radio" id="sq-star1" name="ratingServiceQuality" value="1" aria-label="1 yıldız — Berbat"><label for="sq-star1" title="Berbat"></label>
+      <label id="sdLabel"><span class="field-name">Hizmet Süresi</span> <span class="req" id="serviceDurationReq" aria-hidden="true">(gerekli)</span></label>
+      <div class="stars" role="radiogroup" aria-labelledby="sdLabel" aria-required="true">
+        <input type="radio" id="sd-star5" name="ratingServiceDuration" value="5" required aria-label="5 yıldız — Mükemmel" title="Mükemmel">
+        <input type="radio" id="sd-star4" name="ratingServiceDuration" value="4" aria-label="4 yıldız — İyi" title="İyi">
+        <input type="radio" id="sd-star3" name="ratingServiceDuration" value="3" aria-label="3 yıldız — Orta" title="Orta">
+        <input type="radio" id="sd-star2" name="ratingServiceDuration" value="2" aria-label="2 yıldız — Kötü" title="Kötü">
+        <input type="radio" id="sd-star1" name="ratingServiceDuration" value="1" aria-label="1 yıldız — Berbat" title="Berbat">
       </div>
     </div>
 
     <div class="field rating">
-      <label><span class="field-name">Hizmet Süresi</span> <span class="req" id="serviceDurationReq">(gerekli)</span></label>
-      <div class="stars" role="radiogroup" aria-label="Hizmet Süresi Puanı">
-        <input type="radio" id="sd-star5" name="ratingServiceDuration" value="5" required aria-label="5 yıldız — Mükemmel"><label for="sd-star5" title="Mükemmel"></label>
-        <input type="radio" id="sd-star4" name="ratingServiceDuration" value="4" aria-label="4 yıldız — İyi"><label for="sd-star4" title="İyi"></label>
-        <input type="radio" id="sd-star3" name="ratingServiceDuration" value="3" aria-label="3 yıldız — Orta"><label for="sd-star3" title="Orta"></label>
-        <input type="radio" id="sd-star2" name="ratingServiceDuration" value="2" aria-label="2 yıldız — Kötü"><label for="sd-star2" title="Kötü"></label>
-        <input type="radio" id="sd-star1" name="ratingServiceDuration" value="1" aria-label="1 yıldız — Berbat"><label for="sd-star1" title="Berbat"></label>
-      </div>
-    </div>
-
-    <div class="field rating">
-      <label><span class="field-name">İletişim Kalitesi</span> <span class="req" id="communicationReq">(gerekli)</span></label>
-      <div class="stars" role="radiogroup" aria-label="İletişim Kalitesi Puanı">
-        <input type="radio" id="cm-star5" name="ratingCommunication" value="5" required aria-label="5 yıldız — Mükemmel"><label for="cm-star5" title="Mükemmel"></label>
-        <input type="radio" id="cm-star4" name="ratingCommunication" value="4" aria-label="4 yıldız — İyi"><label for="cm-star4" title="İyi"></label>
-        <input type="radio" id="cm-star3" name="ratingCommunication" value="3" aria-label="3 yıldız — Orta"><label for="cm-star3" title="Orta"></label>
-        <input type="radio" id="cm-star2" name="ratingCommunication" value="2" aria-label="2 yıldız — Kötü"><label for="cm-star2" title="Kötü"></label>
-        <input type="radio" id="cm-star1" name="ratingCommunication" value="1" aria-label="1 yıldız — Berbat"><label for="cm-star1" title="Berbat"></label>
+      <label id="cmLabel"><span class="field-name">İletişim Kalitesi</span> <span class="req" id="communicationReq" aria-hidden="true">(gerekli)</span></label>
+      <div class="stars" role="radiogroup" aria-labelledby="cmLabel" aria-required="true">
+        <input type="radio" id="cm-star5" name="ratingCommunication" value="5" required aria-label="5 yıldız — Mükemmel" title="Mükemmel">
+        <input type="radio" id="cm-star4" name="ratingCommunication" value="4" aria-label="4 yıldız — İyi" title="İyi">
+        <input type="radio" id="cm-star3" name="ratingCommunication" value="3" aria-label="3 yıldız — Orta" title="Orta">
+        <input type="radio" id="cm-star2" name="ratingCommunication" value="2" aria-label="2 yıldız — Kötü" title="Kötü">
+        <input type="radio" id="cm-star1" name="ratingCommunication" value="1" aria-label="1 yıldız — Berbat" title="Berbat">
       </div>
     </div>
 
     <div class="field">
-      <label for="reviewText"><span class="field-name">Yorum</span> <span class="req" id="reviewReq">(gerekli / en az 15 karakter)</span></label>
+      <label for="reviewText"><span class="field-name">Yorum</span> <span class="req" id="reviewReq" aria-hidden="true">(gerekli / en az 15 karakter)</span></label>
       <!-- maxlength 600 DEĞİL, bilinçli olarak yukarıda: sınır aşıldığında
            sayacın kırmızıya dönmesi ve kişinin silerek 600'e inmesi isteniyor.
            maxlength 600 olsaydı tarayıcı 601. karakteri hiç yazdırmaz, kırmızı
            uyarı da hiç görünmezdi. 2000 yalnızca uçuk bir yapıştırmaya karşı
            tavan; gerçek sınırı REVIEW_MAX ve veritabanı kuralı uyguluyor. -->
-      <textarea id="reviewText" name="review" required maxlength="2000"></textarea>
+      <textarea id="reviewText" name="review" required maxlength="2000" aria-describedby="reviewHint"></textarea>
+      <!-- Rozetteki "(en az 15 karakter)" ve "(123/600)" bilgisi ekran
+           okuyucuya BURADAN gidiyor, rozetten değil: rozet alanın ADININ
+           parçası, oradan okununca her odaklanmada tekrar duyuluyor ve
+           sayaç her tuşta adı değiştirdiği için ekran okuyucu sürekli
+           konuşmaya başlıyordu.
+           Sayaç uyarısı ayrı ve SESSİZ bir canlı bölgede: yalnızca sınır
+           aşıldığında ve tekrar altına inildiğinde konuşuyor, her karakterde
+           değil. -->
+      <span class="sr-only" id="reviewHint">En az 15, en fazla 600 karakter.</span>
+      <span class="sr-only" id="reviewCount" role="status"></span>
     </div>
 
     <button type="submit" class="submit-btn" id="submitBtn">Yorumu Gönder</button>
@@ -842,6 +1094,32 @@
   const form = document.getElementById("reviewForm");
   form.reset();
 
+  // Kapalı bir pencereyi/listeyi EKRAN OKUYUCUDAN VE KLAVYEDEN çıkarır.
+  //
+  // `opacity: 0` tek başına YETMİYOR: saydam bir öğe erişilebilirlik ağacında
+  // durmaya devam ediyor. 2026-09-08'de ölçüldü — sayfada gezen ekran okuyucu
+  // kullanıcısı kapalı seçim listesinin beş seçeneğini ve kapalı uyarı
+  // penceresinin metnini okuyordu; sayfa, birbirine bağlanmayan metinler
+  // yığını gibi duyuluyordu.
+  //
+  // `visibility` GEÇİŞİYLE denendi ve bırakıldı: CSS geçişleri sekme arka
+  // plandayken ilerlemiyor, yani gizleme bazen hiç gerçekleşmiyordu.
+  // `inert` anında ve kesin; hem odak sırasından hem erişilebilirlik ağacından
+  // çıkarıyor. `aria-hidden` eski tarayıcılar için yedek.
+  //
+  // SIRA ÖNEMLİ: kapatırken önce odak dışarı alınmalı, sonra inert basılmalı.
+  // Odak inert bir ağacın içindeyken işaretlenirse tarayıcı odağı <body>'ye
+  // atar ve klavye kullanıcısı sayfadaki yerini kaybeder.
+  function erisimiKapat(el) {
+    el.setAttribute("aria-hidden", "true");
+    el.inert = true;
+  }
+
+  function erisimiAc(el) {
+    el.removeAttribute("aria-hidden");
+    el.inert = false;
+  }
+
   const panel = document.getElementById("panel");
   const statusEl = document.getElementById("formStatus");
   const submitBtn = document.getElementById("submitBtn");
@@ -860,8 +1138,9 @@
   // tıklamayı kendi kontrolüne yönlendirir; burada bu istenmiyor, çünkü
   // etikete ya da (gerekli) rozetine değen her tıklama metin kutusunu açıyor,
   // Fotoğraf'ta ise dosya seçiciyi başlatıyordu.
-  // Yıldızlar hariç tutuldu: onlar da <label for> ama tıklamayla puan seçmek
-  // tam olarak istenen davranış.
+  // Yıldızlarda artık <label> YOK (yıldızın kendisi radyo düğmesi), ama
+  // kontrol yine de dışarıda tutuluyor: ileride oraya bir etiket eklenirse
+  // tıklamayla puan seçmek çalışmaya devam etsin.
   // for= nitelikleri duruyor, yani ekran okuyucu için etiket-alan bağı bozulmadı;
   // değişen yalnızca tıklama davranışı.
   form.addEventListener("click", (e) => {
@@ -890,6 +1169,8 @@
       });
       if (index >= 0) {
         trigger.setAttribute("aria-activedescendant", optionEls[index].id);
+        // Klavyeyle uzun listede gezerken vurgulanan satır görünür kalsın.
+        optionEls[index].scrollIntoView({ block: "nearest" });
       } else {
         trigger.removeAttribute("aria-activedescendant");
       }
@@ -901,6 +1182,7 @@
     // (kullanıcı isteği 2026-09-07: "kutu açılır açılmaz Çipleme seçili
     // geliyor"). Zaten seçilmiş bir değer varsa iki durumda da o vurgulanır.
     function open(klavyeyle) {
+      erisimiAc(list);
       list.classList.add("open");
       trigger.classList.add("open");
       trigger.setAttribute("aria-expanded", "true");
@@ -914,6 +1196,21 @@
       trigger.classList.remove("open");
       trigger.setAttribute("aria-expanded", "false");
       highlight(-1);
+      erisimiKapat(list);
+    }
+
+    // Sayfa açılışındaki hâl: liste kapalı, yani erişilebilirlik ağacında da
+    // olmamalı. Bu satır olmazsa liste ilk kez açılana kadar okunabilir kalır.
+    erisimiKapat(list);
+    secileniIsaretle();
+
+    // aria-selected listbox seçeneklerinde ZORUNLU: ekran okuyucu "seçili"
+    // durumunu bundan okuyor. Eskiden hiç yazılmıyordu, yani seçim yapıldıktan
+    // sonra listeye dönen kişi hangisinin seçili olduğunu duymuyordu.
+    function secileniIsaretle() {
+      optionEls.forEach((li) => {
+        li.setAttribute("aria-selected", String(li.dataset.value === input.value));
+      });
     }
 
     function select(index) {
@@ -922,8 +1219,12 @@
       valueEl.textContent = li.dataset.value;
       valueEl.classList.remove("placeholder");
       input.value = li.dataset.value;
+      secileniIsaretle();
+      // Seçim yapıldı: alan artık eksik değil, hata işareti kalksın.
+      trigger.removeAttribute("aria-invalid");
       toggleReq(reqBadge, false);
       close();
+      trigger.focus();
       if (onSelect) onSelect(li.dataset.value);
     }
 
@@ -931,6 +1232,11 @@
       valueEl.textContent = placeholderText;
       valueEl.classList.add("placeholder");
       input.value = "";
+      secileniIsaretle();
+      // Alan gizlenirken hata işareti de gitmeli: aksi halde model sormayan
+      // bir hizmete geçildiğinde gizli alan "geçersiz" olarak kalıyor ve
+      // sonraki turda gereksiz yere işaretli görünüyor.
+      trigger.removeAttribute("aria-invalid");
       toggleReq(reqBadge, true);
       close();
     }
@@ -962,6 +1268,17 @@
       } else if ((e.key === "Enter" || e.key === " ") && isOpen) {
         e.preventDefault();
         select(activeIndex);
+      } else if (e.key === "Home" && isOpen) {
+        e.preventDefault();
+        highlight(0);
+      } else if (e.key === "End" && isOpen) {
+        e.preventDefault();
+        highlight(optionEls.length - 1);
+      } else if (e.key === "Tab" && isOpen) {
+        // Liste açıkken Tab'a basmak listeyi kapatıp sıradaki alana geçmeli;
+        // aksi halde açık bir liste geride kalıyor ve ekran okuyucu hâlâ
+        // "genişletilmiş" diyor. preventDefault YOK: odak akışı sürsün.
+        close();
       }
     });
 
@@ -986,6 +1303,9 @@
     return {
       close,
       clear,
+      // Doğrulama eksik alana odaklanabilsin ve hata işaretini basabilsin diye
+      // tetikleyici düğüm dışarı veriliyor.
+      trigger,
       get value() { return input.value; },
     };
   }
@@ -1014,6 +1334,9 @@
 
   form.firstName.addEventListener("input", () => {
     toggleReq(nameReq, form.firstName.value.trim().length < NAME_MIN);
+    if (form.firstName.value.trim().length >= NAME_MIN) {
+      form.firstName.removeAttribute("aria-invalid");
+    }
   });
 
   // Yorum rozetinin üç hâli var ve üçü de AYNI düğümde, aynı yerde duruyor:
@@ -1025,8 +1348,26 @@
   // Uzunluk trim'lenmiş metinden sayılıyor: veritabanına giden ve doğrulamada
   // ölçülen değer de o. Sayaç ile gönderim aynı sayıyı görmezse rozet "600/600"
   // derken gönderim reddedilebilirdi.
+  // Sayacın SESLİ karşılığı. Rozetin kendisi aria-hidden: her tuş vuruşunda
+  // alanın adını değiştirdiği için ekran okuyucu durmadan konuşuyordu.
+  // Burada yalnızca DURUM DEĞİŞİNCE konuşuluyor — sınır aşıldığında bir kez,
+  // tekrar altına inildiğinde bir kez. Aradaki her karakterde sessiz.
+  const reviewCount = document.getElementById("reviewCount");
+  let sinirAsildiMi = false;
+
+  function sayaciSeslendir(n) {
+    const asiliyor = n > REVIEW_MAX;
+    if (asiliyor === sinirAsildiMi) return;
+    sinirAsildiMi = asiliyor;
+    reviewCount.textContent = asiliyor
+      ? `Yorum çok uzun: ${n} karakter, en fazla ${REVIEW_MAX} olabilir.`
+      : "Yorum uzunluğu sınır içinde.";
+  }
+
   function yorumRozetiniYansit() {
     const n = form.reviewText.value.trim().length;
+    sayaciSeslendir(n);
+    if (n >= REVIEW_MIN) form.reviewText.removeAttribute("aria-invalid");
 
     if (n < REVIEW_MIN) {
       reviewReq.textContent = `(gerekli / en az ${REVIEW_MIN} karakter)`;
@@ -1074,6 +1415,8 @@
       input.addEventListener("change", () => {
         ratings[key] = input.value;
         toggleReq(reqBadge, false);
+        // Puan verildi: grubun hata işareti kalksın.
+        input.closest(".stars").removeAttribute("aria-invalid");
       });
 
       input.addEventListener("keydown", (e) => {
@@ -1141,13 +1484,35 @@
   // Kapanınca odak düğmeye geri veriliyor — yoksa <body>'ye düşer ve klavye
   // kullanıcısı sayfada yerini kaybeder.
   let modaliAcan = null;
+  // Pencere kapanınca odağın gideceği yer. Normalde pencereyi açan öğe, ama
+  // eksik alan uyarısında İLK EKSİK ALAN — kişi "Tamam"a bastığında doğrudan
+  // düzeltmesi gereken yere düşsün. Klavye ve ekran okuyucu kullananlar için
+  // fark büyük: aksi halde uyarıyı duyup formun başına geri dönmek zorundalar.
+  let kapaninca = null;
+
+  // Sayfa açılışında pencere kapalı: ekran okuyucudan ve odak sırasından çıkar.
+  erisimiKapat(validationModal);
 
   function showModal(html) {
     modaliAcan = document.activeElement;
     modalMsg.innerHTML = html;
+    // Odaklamadan ÖNCE açılmalı: inert bir ağacın içindeki düğmeye odak
+    // verilemez.
+    erisimiAc(validationModal);
     validationModal.classList.add("open");
     modalOkBtn.focus();
   }
+
+  // Odak penceredeyken Tab ile ARKADAKİ FORMA KAÇMAMALI. Pencere açıkken
+  // arka plan görsel olarak kapalı ama klavye için hâlâ oradaydı: sekmeye
+  // basan kişi göremediği alanlarda dolaşıyordu (WCAG 2.4.3 / 2.1.2).
+  // Penceredeki odaklanabilir öğeler yalnızca "Tamam" düğmesi olduğu için
+  // tuzak basit: Tab da Shift+Tab da aynı düğmeye dönüyor.
+  validationModal.addEventListener("keydown", (e) => {
+    if (e.key !== "Tab") return;
+    e.preventDefault();
+    modalOkBtn.focus();
+  });
 
   function showValidationModal(missing) {
     const list = birlestir(missing.map((name) => `<strong>${name}</strong>`));
@@ -1156,10 +1521,17 @@
   }
 
   function hideValidationModal() {
+    if (!validationModal.classList.contains("open")) return;
     validationModal.classList.remove("open");
-    // Odağı pencereyi açan öğeye geri ver; o gitmişse forma düşme, hiçbir şey
-    // yapma (odak <body>'de kalır, en azından sayfa dışına kaçmaz).
-    if (modaliAcan && document.contains(modaliAcan)) modaliAcan.focus();
+    // Önce "gidilecek yer" (ilk eksik alan), o yoksa pencereyi açan öğe.
+    // İkisi de gitmişse hiçbir şey yapma — odak <body>'de kalır, en azından
+    // sayfa dışına kaçmaz.
+    const hedef = kapaninca && document.contains(kapaninca) ? kapaninca : modaliAcan;
+    if (hedef && document.contains(hedef)) hedef.focus();
+    // Odak dışarı alındıktan SONRA: içeride odak varken inert basılırsa
+    // tarayıcı odağı <body>'ye atar ve kişi sayfadaki yerini kaybeder.
+    erisimiKapat(validationModal);
+    kapaninca = null;
     modaliAcan = null;
   }
 
@@ -1195,16 +1567,43 @@
     // Sıra formdaki alan sırasıyla aynı tutuluyor ki kullanıcı yukarıdan
     // aşağıya okurken karşılığını bulsun. Eşikler rozetlerle aynı sabitlerden
     // geliyor: rozet "(gerekli)" diyorsa gönderim de gerçekten engelleniyor.
+    //
+    // Her eksik alan hem CÜMLEYE hem de kendi düğümüne işleniyor:
+    //   - aria-invalid="true"  ekran okuyucu alana geldiğinde "geçersiz" diyor,
+    //   - kalın/kesikli çerçeve gözle görene aynı bilgiyi renksiz veriyor,
+    //   - `odak` ilk eksik alanı tutuyor; pencere kapanınca oraya gidiliyor.
+    // Eksik OLMAYAN alanların işareti aynı turda temizleniyor, yoksa bir kez
+    // eksik kalan alan düzeltildikten sonra da "geçersiz" okunmaya devam eder.
     const missing = [];
-    if (firstName.length < NAME_MIN) missing.push("İsim");
-    if (!service) missing.push("Verilen Hizmet");
-    if (needsDeviceModel && !deviceModel) missing.push("Cihaz Modeli");
+    let odak = null;
+
+    function isaretle(el, eksik, ad) {
+      if (!el) return;
+      if (eksik) {
+        el.setAttribute("aria-invalid", "true");
+        missing.push(ad);
+        if (!odak) odak = el;
+      } else {
+        el.removeAttribute("aria-invalid");
+      }
+    }
+
+    isaretle(form.firstName, firstName.length < NAME_MIN, "İsim");
+    isaretle(serviceSelect.trigger, !service, "Verilen Hizmet");
+    if (needsDeviceModel) isaretle(deviceSelect.trigger, !deviceModel, "Cihaz Modeli");
     RATING_CRITERIA.forEach((criterion) => {
-      if (!ratings[criterion.key]) missing.push(criterion.fieldName);
+      isaretle(
+        document.getElementById(criterion.reqId).closest(".field").querySelector(".stars"),
+        !ratings[criterion.key],
+        criterion.fieldName
+      );
     });
-    if (reviewText.length < REVIEW_MIN) missing.push("Yorum");
+    isaretle(form.reviewText, reviewText.length < REVIEW_MIN, "Yorum");
 
     if (missing.length) {
+      // Yıldız grubu <div>; odaklanabilir değil. O yüzden grubun ilk
+      // radyosuna gidiliyor — ekran okuyucu grubun adını da birlikte okuyor.
+      kapaninca = odak.classList.contains("stars") ? odak.querySelector("input") : odak;
       showValidationModal(missing);
       return;
     }
@@ -1278,12 +1677,23 @@
   // üzerindeki click dinleyicisi kaybolur.
   function showConfirmation() {
     panel.innerHTML = `
-      <div class="confirm">
-        <h2>Yorum Alındı!</h2>
+      <div class="confirm" role="status">
+        <h2 tabindex="-1" id="confirmHeading">Yorum Alındı!</h2>
         <p>Yorumunuz sırada bekliyor, kontrol edildikten sonra sitede görünecek.</p>
       </div>
     `;
     panel.classList.add("confirm-in");
+
+    // Panelin tamamı değiştiği için ekran okuyucu kullanan biri BUNU HİÇ
+    // DUYMUYORDU: odak silinen "Yorumu Gönder" düğmesindeydi, o düğüm DOM'dan
+    // kalkınca odak <body>'ye düşüyor ve hiçbir şey okunmuyordu. Yani gönderim
+    // başarılı mı değil mi anlaşılmıyordu.
+    // İki katmanlı çözüm: role="status" metni kendiliğinden duyuruyor,
+    // başlığa odaklanmak da kişiyi yeni içeriğin başına götürüyor.
+    // Sayfa başlığı da değişiyor — sekmeye dönen kişi durumu oradan da görüyor.
+    document.title = "Yorum alındı — HazeFix";
+    const heading = document.getElementById("confirmHeading");
+    if (heading) heading.focus();
   }
 </script>
 

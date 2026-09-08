@@ -50,6 +50,20 @@
 
   * { box-sizing: border-box; }
 
+  /* Yalnızca ekran okuyucuya görünen metin — formdakinin aynısı. */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
   /* Formda body dikeyde ORTALIYOR; burada ortalanmıyor: liste uzadığında
      ortalanmış bir flex çocuğu yukarıdan taşar ve taşan kısma kaydırılamaz.
      Bu sayfa listeyle uzayacağı için üstten hizalı. */
@@ -184,10 +198,15 @@
 
   /* ---- liste görünümü ---- */
 
+  /* Dikey dolgu DOKUNMA HEDEFİ İÇİN: yazı 14px olduğundan tıklanabilir alan
+     ~17px yüksekliğindeydi, WCAG 2.2'nin 24x24 eşiğinin altında. Titreyen
+     eller ya da dokunmatik ekran için fazla küçük. Dolgu görünüşü
+     değiştirmiyor (zemin yok), yalnızca hedefi büyütüyor. */
   .link-btn {
     background: none;
     border: none;
-    padding: 0;
+    padding: 5px 4px;
+    margin: -5px -4px;
     font-family: inherit;
     font-size: 14px;
     color: var(--ink);
@@ -438,6 +457,12 @@
     z-index: 1000;
     opacity: 0;
     pointer-events: none;
+    /* GÖRSEL solma burada; ekran okuyucudan ve odak sırasından çıkarma işini
+       JS `inert` + `aria-hidden` ile yapıyor. `opacity: 0` bir öğeyi
+       erişilebilirlik ağacından ÇIKARMIYOR — kapalı pencerenin başlığı,
+       ipucu metni ve üç düğmesi sayfada gezen kişiye okunuyordu.
+       `visibility` geçişi denenip bırakıldı: CSS geçişleri sekme arka
+       plandayken ilerlemiyor, yani gizleme bazen hiç gerçekleşmiyor. */
     transition: opacity 160ms ease;
   }
 
@@ -526,6 +551,85 @@
     display: none;
   }
   .story-note.show { display: block; }
+
+  /* ---------------------------------------------------------------
+     YÜKSEK KONTRAST (forced-colors) — gerekçelerin tamamı
+     review/index.html'deki aynı bloğun başında.
+     Özet: bu modda tarayıcı yazarın renklerini atıyor; background-color
+     Canvas'a, şeffaf çerçeveler ise GÖRÜNÜR sistem rengine dönüyor.
+     Sonuç olarak yıldızlar kayboluyor, kutularda kalıcı halka çıkıyor ve
+     dolu/boş düğme ayrımı ile SEÇİLİ SEKME ayrımı tamamen yok oluyor.
+     --------------------------------------------------------------- */
+  @media (forced-colors: active) {
+    /* Kalıcı görünen şeffaf odak halkası kapatılıp gerçek odağa bağlanıyor. */
+    input[type="email"],
+    input[type="password"] {
+      outline-style: none;
+    }
+
+    input[type="email"]:focus,
+    input[type="password"]:focus,
+    .tab:focus-visible,
+    .act-btn:focus-visible,
+    .submit-btn:focus-visible,
+    .link-btn:focus-visible {
+      outline: 3px solid Highlight;
+      outline-offset: 2px;
+    }
+
+    /* Yıldızlar: maskenin rengi background-color'dan geliyor, o da Canvas'a
+       zorlanıp zeminle aynı olduğu için görünmez kalıyordu. Boş/dolu ayrımını
+       BİÇİM taşımaya devam ediyor. */
+    .rstar {
+      forced-color-adjust: none;
+      background-color: CanvasText;
+    }
+    .rstar.on { background-color: Highlight; }
+
+    /* SEÇİLİ SEKME: normalde yalnızca dolgu rengiyle ayrılıyor, bu modda üç
+       sekme de ButtonFace'e düşüp hangisinin açık olduğu anlaşılmıyordu. */
+    .tab.active {
+      forced-color-adjust: none;
+      background: Highlight;
+      color: HighlightText;
+      border-color: Highlight;
+    }
+
+    .tab:hover,
+    .act-btn:hover,
+    .submit-btn:hover {
+      forced-color-adjust: none;
+      background: Highlight;
+      color: HighlightText;
+      border-color: Highlight;
+    }
+
+    /* Story penceresi zeminden ayrılsın: bulanıklık bu modda çalışmıyor. */
+    .story-box { border: 2px solid CanvasText; }
+
+    /* Ölü bölge kılavuzu: taralı desen sistem renklerinde kayboluyordu.
+       Kesikli çerçeve zaten sınırı gösteriyor, desen de korunuyor. */
+    .story-dead {
+      forced-color-adjust: none;
+      background: repeating-linear-gradient(-45deg, CanvasText 0 3px, Canvas 3px 12px);
+      opacity: 0.5;
+    }
+  }
+
+  /* ---------------------------------------------------------------
+     HAREKET AZALTMA — gerekçe review/index.html'de.
+     --------------------------------------------------------------- */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      transition-delay: 0s !important;
+      scroll-behavior: auto !important;
+    }
+  }
 </style>
 </head>
 <body>
@@ -560,7 +664,12 @@
     </header>
 
     <div class="tabs">
-      <div class="tab-group">
+      <!-- role="group" + aria-label: üç düğmenin BİRLİKTE ne işe yaradığını
+           söylüyor. Yoksa ekran okuyucu bunları sayfaya serpiştirilmiş üç
+           bağımsız düğme gibi okuyor ve "hangi listeyi seçiyorum" bağlantısı
+           kurulamıyor. Sekme yerine aria-pressed'li düğmeler kullanılıyor;
+           gerçek bir tablist değil, çünkü listenin kendisi ayrı bir bölge. -->
+      <div class="tab-group" role="group" aria-label="Gösterilecek liste">
         <button type="button" class="tab active" id="tabPending" aria-pressed="true">Bekleyen</button>
         <button type="button" class="tab" id="tabApproved" aria-pressed="false">Onaylı</button>
         <button type="button" class="tab" id="tabArchived" aria-pressed="false">Arşiv</button>
@@ -568,6 +677,10 @@
       <button type="button" class="tab tab-spaced" id="refreshBtn">Yenile</button>
     </div>
 
+    <!-- Liste sekme değişiminde ve yenilemede tamamen yeniden yazılıyor.
+         aria-live olmadan ekran okuyucu kullanan biri hiçbir şey duymuyor:
+         düğmeye basıyor, ekran değişiyor, ses yok. Kaç yorum geldiği
+         #listStatus üzerinden duyuruluyor (aşağıda, setTab/render içinde). -->
     <div id="listBody"></div>
     <p class="status" id="listStatus" role="status"></p>
   </section>
@@ -589,7 +702,7 @@
 
     <div class="story-actions">
       <a class="act-btn" id="storyDownload" download>PNG indir</a>
-      <button type="button" class="act-btn" id="storyToggleGuides">Kılavuzu gizle</button>
+      <button type="button" class="act-btn" id="storyToggleGuides" aria-pressed="true">Kılavuzu gizle</button>
       <button type="button" class="act-btn" id="storyClose">Kapat</button>
     </div>
 
@@ -812,6 +925,11 @@
     head.className = "rev-head";
     const name = document.createElement("h2");
     name.textContent = row["İsim"];
+    // Kart bir bölge (article); adı olmazsa ekran okuyucu onu adsız bir
+    // "makale" diye okuyor ve kartlar arasında gezerken hangisinde olunduğu
+    // anlaşılmıyor. Ad, kartın kendi başlığından geliyor.
+    name.id = `rev-ad-${row.id}`;
+    card.setAttribute("aria-labelledby", name.id);
     const date = document.createElement("span");
     date.className = "rev-date";
     date.textContent = tarihYaz(row["Yorum Tarihi"]);
@@ -838,6 +956,10 @@
       const num = document.createElement("span");
       num.className = "num";
       num.textContent = `${row[column]}/5`;
+      // Sayı gözle okuyan için; ekran okuyucuya aynı bilgiyi yıldız grubunun
+      // aria-label'ı zaten veriyor ("4/5 — İyi"). İkisi birden açık kalırsa
+      // her kriter iki kez okunuyor.
+      num.setAttribute("aria-hidden", "true");
       scores.append(crit, starsFor(row[column]), num);
     });
     card.appendChild(scores);
@@ -965,6 +1087,16 @@
     const aktif = VIEWS[view];
     const gosterilecek = rows.filter(aktif.match);
     listBody.replaceChildren();
+
+    // Listenin değiştiğini SESLİ söyle. Ekran okuyucu kullanan biri sekmeye
+    // basınca ekranın yenilendiğini göremiyor; #listStatus role="status"
+    // olduğu için buraya yazılan cümle kendiliğinden okunuyor.
+    setStatus(
+      listStatus,
+      gosterilecek.length
+        ? `${aktif.label}: ${gosterilecek.length} yorum.`
+        : aktif.empty
+    );
 
     if (!gosterilecek.length) {
       const bos = document.createElement("p");
@@ -1659,13 +1791,42 @@
   // gezinen biri, üstte pencere varken arka plandaki listede dolaşıyor.
   let storyyiAcan = null;
 
+  // Kapalı pencere ekran okuyucudan ve odak sırasından çıkarılıyor.
+  // `opacity: 0` bunu YAPMIYOR: pencere kapalıyken bile başlığı, ipucu metni
+  // ve üç düğmesi okunuyor, sekmeyle o düğmelere gidilebiliyordu.
+  // Sayfa açılışındaki hâl de kapalı.
+  storyOverlay.setAttribute("aria-hidden", "true");
+  storyOverlay.inert = true;
+
   function storyKapat() {
     storyOverlay.classList.remove("open");
     if (storyyiAcan && document.contains(storyyiAcan)) storyyiAcan.focus();
+    // Odak dışarı alındıktan SONRA inert: içeride odak varken işaretlenirse
+    // tarayıcı odağı <body>'ye atar ve klavye kullanıcısı yerini kaybeder.
+    storyOverlay.setAttribute("aria-hidden", "true");
+    storyOverlay.inert = true;
     storyyiAcan = null;
     // Bellekte tutulan görseli bırak: 1080x1920 PNG'ler birikirse sekme şişer.
     if (storyUrl) { URL.revokeObjectURL(storyUrl); storyUrl = null; }
   }
+
+  // Pencere açıkken Tab ARKADAKİ LİSTEYE KAÇMAMALI. Arka plan görsel olarak
+  // kapalı ama klavye için hâlâ oradaydı. `inert` yalnızca pencerenin KENDİSİ
+  // kapalıyken iş görüyor; pencere açıkken tuzağı bu kuruyor.
+  storyOverlay.addEventListener("keydown", (e) => {
+    if (e.key !== "Tab") return;
+    const odaklanabilir = [...storyOverlay.querySelectorAll("a[href], button:not(:disabled)")];
+    if (!odaklanabilir.length) return;
+    const ilk = odaklanabilir[0];
+    const son = odaklanabilir[odaklanabilir.length - 1];
+    if (e.shiftKey && document.activeElement === ilk) {
+      e.preventDefault();
+      son.focus();
+    } else if (!e.shiftKey && document.activeElement === son) {
+      e.preventDefault();
+      ilk.focus();
+    }
+  });
 
   async function storyAc(row, btn) {
     const eskiMetin = btn.textContent;
@@ -1687,6 +1848,10 @@
         ? "Yorum çok uzun olduğu için görselde kısaltıldı. Tamamı panelde duruyor."
         : "";
 
+      // Odaklamadan ÖNCE açılmalı: inert bir ağacın içindeki öğeye odak
+      // verilemez.
+      storyOverlay.removeAttribute("aria-hidden");
+      storyOverlay.inert = false;
       storyOverlay.classList.add("open");
       storyyiAcan = btn;
       storyDownload.focus();   // pencerenin ana eylemi
@@ -1702,6 +1867,9 @@
   storyToggleGuides.addEventListener("click", () => {
     const gizli = storyFrame.classList.toggle("clean");
     storyToggleGuides.textContent = gizli ? "Kılavuzu göster" : "Kılavuzu gizle";
+    // Açık/kapalı bir durumu olan düğme: ekran okuyucu "basılı / basılı değil"
+    // diye okusun. Metin de değişiyor ama durum bilgisi ayrıca taşınmalı.
+    storyToggleGuides.setAttribute("aria-pressed", String(!gizli));
   });
 
   document.getElementById("storyClose").addEventListener("click", storyKapat);
