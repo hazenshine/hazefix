@@ -463,9 +463,18 @@
     margin-right: 10px;
   }
 
+  /* SIRA DÜZ: 1'den 5'e, hem HTML'de hem ekranda. `row-reverse` KALDIRILDI
+     ve geri konmamalı (2026-09-08, telefonda ekran okuyucuyla test).
+     Eskiden HTML'de yıldızlar 5→1 yazılıp CSS ile ters çevriliyordu; bu,
+     "seçilenin altındakiler de dolsun" efektini saf CSS ile yapabilmek için
+     kullanılan bilinen bir numara. Fare ve klavyede sorun çıkarmıyor, ama
+     EKRAN OKUYUCU HTML SIRASINI İZLİYOR: telefonda parmakla ilerleyen kişi
+     önce en sağdaki "5 yıldız"a atlıyor, oradan sola yürüyor, sonraki alan
+     için tekrar sol başa dönüyordu — imleç sağa sola fırlıyordu.
+     Ölçüldü: sayfadaki 20 öğeden 12'si sırasızdı, hepsi yıldızlar.
+     WCAG 1.3.2 (Anlamlı Sıra) ihlali; axe-core bu kuralı ölçemiyor. */
   .stars {
     display: inline-flex;
-    flex-direction: row-reverse;
     gap: 4px;
   }
 
@@ -511,13 +520,17 @@
      Burada RENGİN yanında BİÇİM de değişiyor: içi boş yıldız içi doluya dönüyor.
      Yalnızca mask-image yazılı, maskenin konum/boyut/tekrar ayarları yukarıdaki
      kısayoldan miras kalıyor — oraya dokunulursa burası da bozulur.
-     DOM sırası ters (5,4,3,2,1) + row-reverse: bir yıldızın DOM'da SONRA gelen
-     kardeşleri ekranda onun SOLUNDA duruyor, yani "seçilenin altındakiler de
-     dolsun" kuralı `~` ile kendiliğinden çıkıyor. */
-  .stars input:checked,
-  .stars input:checked ~ input,
-  .stars input:hover,
-  .stars input:hover ~ input {
+
+     DOLGUYU ARTIK JS BELİRLİYOR (`.dolu` sınıfı), saf CSS DEĞİL.
+     Sebep: sıra düzeltilince (1→5) "seçilenin ve ÖNCEKİLERİN dolması"
+     gerekiyor, ama CSS'te "önceki kardeş" seçicisi yok — yalnızca sonraki
+     kardeş (`~`) var. Eski numara tam olarak bu yüzden sırayı ters yazıyordu.
+     `:has()` ile çözülebilirdi ama dolgu, kişinin kaç puan verdiğini gösteren
+     ASIL BİLGİ; onu destekleyeni olmayan bir tarayıcıda kaybolmasını göze
+     alamayız. JS'te tek satır sınıf eklemek hem her tarayıcıda çalışıyor hem
+     de kuralları iki satıra indiriyor — özgüllük çakışması kalmıyor.
+     Formun gönderimi zaten JS'e bağlı, yani yeni bir bağımlılık eklemiyor. */
+  .stars input.dolu {
     background-color: var(--star-filled);
     -webkit-mask-image: var(--star-solid);
     mask-image: var(--star-solid);
@@ -779,10 +792,7 @@
       background-color: CanvasText;
     }
 
-    .stars input:checked,
-    .stars input:checked ~ input,
-    .stars input:hover,
-    .stars input:hover ~ input {
+    .stars input.dolu {
       background-color: Highlight;
     }
 
@@ -949,33 +959,33 @@
     <div class="field rating">
       <label id="sqLabel"><span class="field-name">Hizmet Kalitesi</span> <span class="req" id="serviceQualityReq" aria-hidden="true">(gerekli)</span></label>
       <div class="stars" role="radiogroup" aria-labelledby="sqLabel" aria-required="true">
-        <input type="radio" id="sq-star5" name="ratingServiceQuality" value="5" required aria-label="5 yıldız — Mükemmel" title="Mükemmel">
-        <input type="radio" id="sq-star4" name="ratingServiceQuality" value="4" aria-label="4 yıldız — İyi" title="İyi">
-        <input type="radio" id="sq-star3" name="ratingServiceQuality" value="3" aria-label="3 yıldız — Orta" title="Orta">
+        <input type="radio" id="sq-star1" name="ratingServiceQuality" value="1" required aria-label="1 yıldız — Berbat" title="Berbat">
         <input type="radio" id="sq-star2" name="ratingServiceQuality" value="2" aria-label="2 yıldız — Kötü" title="Kötü">
-        <input type="radio" id="sq-star1" name="ratingServiceQuality" value="1" aria-label="1 yıldız — Berbat" title="Berbat">
+        <input type="radio" id="sq-star3" name="ratingServiceQuality" value="3" aria-label="3 yıldız — Orta" title="Orta">
+        <input type="radio" id="sq-star4" name="ratingServiceQuality" value="4" aria-label="4 yıldız — İyi" title="İyi">
+        <input type="radio" id="sq-star5" name="ratingServiceQuality" value="5" aria-label="5 yıldız — Mükemmel" title="Mükemmel">
       </div>
     </div>
 
     <div class="field rating">
       <label id="sdLabel"><span class="field-name">Hizmet Süresi</span> <span class="req" id="serviceDurationReq" aria-hidden="true">(gerekli)</span></label>
       <div class="stars" role="radiogroup" aria-labelledby="sdLabel" aria-required="true">
-        <input type="radio" id="sd-star5" name="ratingServiceDuration" value="5" required aria-label="5 yıldız — Mükemmel" title="Mükemmel">
-        <input type="radio" id="sd-star4" name="ratingServiceDuration" value="4" aria-label="4 yıldız — İyi" title="İyi">
-        <input type="radio" id="sd-star3" name="ratingServiceDuration" value="3" aria-label="3 yıldız — Orta" title="Orta">
+        <input type="radio" id="sd-star1" name="ratingServiceDuration" value="1" required aria-label="1 yıldız — Berbat" title="Berbat">
         <input type="radio" id="sd-star2" name="ratingServiceDuration" value="2" aria-label="2 yıldız — Kötü" title="Kötü">
-        <input type="radio" id="sd-star1" name="ratingServiceDuration" value="1" aria-label="1 yıldız — Berbat" title="Berbat">
+        <input type="radio" id="sd-star3" name="ratingServiceDuration" value="3" aria-label="3 yıldız — Orta" title="Orta">
+        <input type="radio" id="sd-star4" name="ratingServiceDuration" value="4" aria-label="4 yıldız — İyi" title="İyi">
+        <input type="radio" id="sd-star5" name="ratingServiceDuration" value="5" aria-label="5 yıldız — Mükemmel" title="Mükemmel">
       </div>
     </div>
 
     <div class="field rating">
       <label id="cmLabel"><span class="field-name">İletişim Kalitesi</span> <span class="req" id="communicationReq" aria-hidden="true">(gerekli)</span></label>
       <div class="stars" role="radiogroup" aria-labelledby="cmLabel" aria-required="true">
-        <input type="radio" id="cm-star5" name="ratingCommunication" value="5" required aria-label="5 yıldız — Mükemmel" title="Mükemmel">
-        <input type="radio" id="cm-star4" name="ratingCommunication" value="4" aria-label="4 yıldız — İyi" title="İyi">
-        <input type="radio" id="cm-star3" name="ratingCommunication" value="3" aria-label="3 yıldız — Orta" title="Orta">
+        <input type="radio" id="cm-star1" name="ratingCommunication" value="1" required aria-label="1 yıldız — Berbat" title="Berbat">
         <input type="radio" id="cm-star2" name="ratingCommunication" value="2" aria-label="2 yıldız — Kötü" title="Kötü">
-        <input type="radio" id="cm-star1" name="ratingCommunication" value="1" aria-label="1 yıldız — Berbat" title="Berbat">
+        <input type="radio" id="cm-star3" name="ratingCommunication" value="3" aria-label="3 yıldız — Orta" title="Orta">
+        <input type="radio" id="cm-star4" name="ratingCommunication" value="4" aria-label="4 yıldız — İyi" title="İyi">
+        <input type="radio" id="cm-star5" name="ratingCommunication" value="5" aria-label="5 yıldız — Mükemmel" title="Mükemmel">
       </div>
     </div>
 
@@ -1410,13 +1420,44 @@
   function setupStarRating({ key, name, reqId }) {
     const reqBadge = document.getElementById(reqId);
     const inputs = Array.from(form.querySelectorAll(`input[name="${name}"]`));
+    const grup = inputs[0].closest(".stars");
+
+    // Yıldız dolgusu artık JS'te. Eskiden saf CSS ile yapılıyordu ama o numara
+    // yıldızları HTML'de TERS SIRADA (5→1) yazmayı gerektiriyordu ve ekran
+    // okuyucu HTML sırasını izlediği için telefonda imleç sağa sola fırlıyordu.
+    // Sıra düzeltilince "seçilenin ve ÖNCEKİLERİN dolması" gerekti; CSS'te
+    // "önceki kardeş" seçicisi yok. Gerekçenin tamamı .stars kuralının yanında.
+    //
+    // Tek bir yerden hesaplanıyor: fare bir yıldızın üzerindeyse ÖNİZLEME
+    // kazanıyor, değilse seçili puan geçerli.
+    let onizleme = null;
+
+    function dolgutuYansit() {
+      const aktif = onizleme !== null ? onizleme : Number(ratings[key] || 0);
+      inputs.forEach((i) => i.classList.toggle("dolu", Number(i.value) <= aktif));
+    }
+
+    // Fare gruptan tamamen çıkınca önizleme biter ve seçili puana dönülür.
+    // Dokunmatik cihazlarda mouseenter/mouseleave zaten tetiklenmiyor, yani
+    // telefonda bu blok sessizce devre dışı — orada dolgu doğrudan seçimden
+    // geliyor.
+    grup.addEventListener("mouseleave", () => {
+      onizleme = null;
+      dolgutuYansit();
+    });
 
     inputs.forEach((input) => {
+      input.addEventListener("mouseenter", () => {
+        onizleme = Number(input.value);
+        dolgutuYansit();
+      });
+
       input.addEventListener("change", () => {
         ratings[key] = input.value;
         toggleReq(reqBadge, false);
+        dolgutuYansit();
         // Puan verildi: grubun hata işareti kalksın.
-        input.closest(".stars").removeAttribute("aria-invalid");
+        grup.removeAttribute("aria-invalid");
       });
 
       input.addEventListener("keydown", (e) => {
@@ -1439,6 +1480,9 @@
     const restored = form.querySelector(`input[name="${name}"]:checked`);
     toggleReq(reqBadge, !restored);
     if (restored) ratings[key] = restored.value;
+    // Dolgu da aynı sebeple burada bir kez kuruluyor: tarayıcı seçimi geri
+    // yüklediğinde change olayı çıkmıyor, yıldızlar boş kalırdı.
+    dolgutuYansit();
   }
 
   RATING_CRITERIA.forEach(setupStarRating);
