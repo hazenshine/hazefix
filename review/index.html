@@ -95,7 +95,6 @@
        4.02:1 ile AA'nın altındaydı, lacivert wash üzerinde 4.75:1 ile
        geçiyor. Yani bilerek kabul edilmiş o ihlal kendiliğinden kapandı. */
     --ink-wash: rgba(28, 48, 78, 0.14);
-    --signal: #206541;
     --danger: #9c3628;
     --font-body: "Quicksand", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
     --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
@@ -395,7 +394,7 @@
 
   /* Vurgulanan satırın yazısı yıldızlarla AYNI renk (--accent), kullanıcı
      isteği 2026-09-07 — önce "(gerekli)" rozetinin bordosuydu. İki tur sürdü:
-       1. Başlangıçta --signal yeşiliydi — siteye yabancı duruyordu.
+       1. Başlangıçta yeşildi — siteye yabancı duruyordu.
        2. Sonra logonun laciverti (#1c304e) denendi: kullanıcı "hiç görünmüyor"
           dedi ve haklıydı — normal satır rengi #241d12 ile neredeyse aynı
           koyulukta, yani vurgu okunmuyordu. Ders: vurgu rengini seçerken
@@ -460,9 +459,8 @@
     transform: scale(0.8);
   }
 
-  /* Dolu yıldız kendi token'ında, --signal'de DEĞİL: --signal aynı zamanda
-     başarı mesajının ve dropdown vurgusunun rengi, onların yeşil kalması
-     gerekiyor. Yıldız rengini değiştirmek için burayı değil token'ı düzenle.
+  /* Dolu yıldız kendi token'ında (--star-filled): yıldız rengini değiştirmek
+     için burayı değil token'ı düzenle.
      Burada RENGİN yanında BİÇİM de değişiyor: içi boş yıldız içi doluya dönüyor.
      Yalnızca mask-image yazılı, maskenin konum/boyut/tekrar ayarları yukarıdaki
      kısayoldan miras kalıyor — oraya dokunulursa burası da bozulur. */
@@ -544,8 +542,12 @@
     text-align: center;
   }
 
+  /* Yalnızca hata hâli var. Bir "başarılı" hâli (yeşil .status.ok ve onun
+     --signal token'ı) tanımlıydı ama setStatus hiçbir kod yolunda "ok" ile
+     çağrılmıyordu, yani ekranda hiç görünmedi; ikisi de 2026-09-08'de silindi.
+     Sebebi duruyor: form başarılı olunca showConfirmation() panelin tamamını
+     değiştiriyor, ayrı bir satıra gerek kalmıyor. */
   .status.error { color: var(--danger); }
-  .status.ok { color: var(--signal); }
 
   .confirm {
     text-align: center;
